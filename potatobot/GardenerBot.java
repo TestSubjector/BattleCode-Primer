@@ -7,12 +7,7 @@ public class GardenerBot extends Globals
 	{
 		while (true)
 		{
-			updateRobotCount();
-			updateBulletCount();
-			if (dying())
-			{
-				imDying();
-			}
+			header();
 			int scouts = robotCount[RobotType.SCOUT.ordinal()];
 			if (bullets > 1.25 * RobotType.SCOUT.bulletCost && scouts < robotCountMax[RobotType.SCOUT.ordinal()])
 			{
@@ -24,8 +19,7 @@ public class GardenerBot extends Globals
 				tryToWater();
 			}
 			wander();
-			prevHealth = rc.getHealth();
-			Clock.yield();
+			footer();
 		}
 	}
 	

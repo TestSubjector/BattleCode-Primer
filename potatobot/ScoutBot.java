@@ -7,14 +7,9 @@ public class ScoutBot extends Globals
 	{
 		while (true)
 		{
-			updateRobotCount();
-			if (dying())
-			{
-				imDying();
-			}
+			header();
 			wander();
-			prevHealth = rc.getHealth();
-			Clock.yield();
+			footer();
 		}
 	}
 }

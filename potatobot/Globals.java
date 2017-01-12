@@ -105,4 +105,20 @@ public class Globals
 		int robots = robotCount[myType.ordinal()];
 		rc.broadcast(myType.ordinal(), robots - 1);
 	}
+	
+	public static void header()throws GameActionException
+	{
+		updateRobotCount();
+		updateBulletCount();
+		if (dying())
+		{
+			imDying();
+		}
+	}
+	
+	public static void footer()throws GameActionException
+	{
+		prevHealth = rc.getHealth();
+		Clock.yield();
+	}
 }

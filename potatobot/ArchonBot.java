@@ -7,19 +7,14 @@ public class ArchonBot extends Globals
 	{
 		while (true)
 		{
-			updateRobotCount();
-			if (dying())
-			{
-				imDying();
-			}
+			header();
 			int gardeners = robotCount[RobotType.GARDENER.ordinal()];
 			if (gardeners < robotCountMax[RobotType.GARDENER.ordinal()])
 			{
 				tryHiringGardener(gardeners);
 			}
 			wander();
-			prevHealth = rc.getHealth();
-			Clock.yield();
+			footer();
 		}
 	}
 	
