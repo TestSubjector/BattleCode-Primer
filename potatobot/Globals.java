@@ -10,6 +10,7 @@ public class Globals
 	public static MapLocation here;
 	public static int myID;
 	public static RobotType myType;
+	public static float bullets;
 	public static float prevHealth;
 	public static Team us;
 	public static Team them;
@@ -25,6 +26,7 @@ public class Globals
 		roundNum = 0;
 		myID = rc.getID();
 		myType = rc.getType();
+		bullets = rc.getTeamBullets();
 		prevHealth = rc.getHealth();
 		us = rc.getTeam();
 		them = us.opponent();
@@ -46,11 +48,17 @@ public class Globals
 		robotCount = new int[6];
 		robotCountMax = new int[6];
 		Arrays.fill(robotCountMax, 5);
+		robotCountMax[3] = 3;
 	}
 	
 	public static void updateLocation()
 	{
 		here = rc.getLocation();
+	}
+	
+	public static void updateBulletCount()
+	{
+		bullets = rc.getTeamBullets();
 	}
 	
 	public static void updateRobotCount()throws GameActionException
@@ -75,6 +83,7 @@ public class Globals
 			if (rc.canMove(randomDir))
 			{
 				rc.move(randomDir);
+				updateLocation();
 				return;
 			}
 			tries++;

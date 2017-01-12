@@ -8,19 +8,22 @@ public class GardenerBot extends Globals
 		while (true)
 		{
 			updateRobotCount();
+			updateBulletCount();
 			if (dying())
 			{
 				imDying();
 			}
 			int scouts = robotCount[RobotType.SCOUT.ordinal()];
-			if (scouts < robotCountMax[RobotType.SCOUT.ordinal()])
+			if (bullets > 1.25 * RobotType.SCOUT.bulletCost && scouts < robotCountMax[RobotType.SCOUT.ordinal()])
 			{
 				spawn(RobotType.SCOUT);
 			}
 			else
 			{
-				wander();
+				tryToPlant();
+				tryToWater();
 			}
+			wander();
 			prevHealth = rc.getHealth();
 			Clock.yield();
 		}
@@ -35,10 +38,45 @@ public class GardenerBot extends Globals
 			if (rc.canBuildRobot(type, randomDir))
 			{
 				rc.buildRobot(type, randomDir);
-				rc.broadcast(RobotType.SCOUT.ordinal(), robotCount[RobotType.SCOUT.ordinal()] + 1);
+				rc.broadcast(type.ordinal(), robotCount[type.ordinal()] + 1);
 				return;
 			}
 			tries++;
 		}
 	}
+	
+	public static void tryToPlant()throws GameActionException
+	{
+		if (bullets > GameConstants.BULLET_TREE_COST)
+		{
+			int tries = 0;
+			while (tries < 50)
+			{
+				Direction randomDir = randomDirection();
+				if (rc.canPlantTree(randomDir)) 
+				{
+	                rc.plantTree(randomDir);
+	                return;
+	            }
+				tries++;
+			}
+		}
+	}
+	
+	public static void tryToWater()throws GameActionException
+	{
+        if(rc.canWater()) 
+        {
+            TreeInfo[] nearbyTrees = rc.senseNearbyTrees();
+            for (TreeInfo tree : nearbyTrees)
+                if(tree.getHealth() < GameConstants.BULLET_TREE_MAX_HEALTH - GameConstants.WATER_HEALTH_REGEN_RATE) 
+                {
+                    if (rc.canWater(tree.getID())) 
+                    {
+                        rc.water(tree.getID());
+                        break;
+                    }
+                }
+        }
+    }
 }
