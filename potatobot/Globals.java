@@ -4,6 +4,7 @@ import battlecode.common.*;
 public class Globals 
 {
 	public static RobotController rc;
+	public static int roundNum;
 	public static MapLocation here;
 	public static int myID;
 	public static RobotType myType;
@@ -12,10 +13,12 @@ public class Globals
 	public static MapLocation[] ourInitialArchons;
 	public static MapLocation[] theirInitialArchons;
 	public static MapLocation theirInitialArchonCentre;
+	public static int[] robotCount;
 	
 	public static void init(RobotController rcinit)throws GameActionException
 	{
 		rc = rcinit;
+		roundNum = 0;
 		myID = rc.getID();
 		myType = rc.getType();
 		us = rc.getTeam();
@@ -35,11 +38,20 @@ public class Globals
 				theirInitialArchonCentre.x / n,
 				theirInitialArchonCentre.y / n
 				);
+		robotCount = new int[6];
 	}
 	
 	public static void updateLocation()
 	{
 		here = rc.getLocation();
+	}
+	
+	public static void updateRobotCount()throws GameActionException
+	{
+		for (int i = 1; i <= 5; i++)
+		{
+			robotCount[i] = rc.readBroadcast(i);
+		}
 	}
 	
 	public static Direction randomDirection() 
@@ -50,7 +62,7 @@ public class Globals
 	public static void wander()throws GameActionException
 	{
 		int tries = 0;
-		while (tries < 5)
+		while (tries < 50)
 		{
 			Direction randomDir = randomDirection();
 			if (rc.canMove(randomDir))

@@ -7,6 +7,7 @@ public class ScoutBot extends Globals
 	{
 		while (true)
 		{
+			wander();
 			Clock.yield();
 		}
 	}
