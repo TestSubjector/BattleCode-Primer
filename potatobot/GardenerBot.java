@@ -7,10 +7,13 @@ public class GardenerBot extends Globals
 	{
 		while (true)
 		{
-			roundNum = rc.getRoundNum();
 			updateRobotCount();
+			if (dying())
+			{
+				imDying();
+			}
 			int scouts = robotCount[RobotType.SCOUT.ordinal()];
-			if (scouts * 50 < roundNum)
+			if (scouts < robotCountMax[RobotType.SCOUT.ordinal()])
 			{
 				spawn(RobotType.SCOUT);
 			}
@@ -18,6 +21,7 @@ public class GardenerBot extends Globals
 			{
 				wander();
 			}
+			prevHealth = rc.getHealth();
 			Clock.yield();
 		}
 	}

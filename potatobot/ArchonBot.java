@@ -7,10 +7,13 @@ public class ArchonBot extends Globals
 	{
 		while (true)
 		{
-			roundNum = rc.getRoundNum();
 			updateRobotCount();
+			if (dying())
+			{
+				imDying();
+			}
 			int gardeners = robotCount[RobotType.GARDENER.ordinal()];
-			if (gardeners * 70 < roundNum)
+			if (gardeners < robotCountMax[RobotType.GARDENER.ordinal()])
 			{
 				int tries = 0;
 				while (tries < 5)
@@ -29,6 +32,7 @@ public class ArchonBot extends Globals
 			{
 				wander();
 			}
+			prevHealth = rc.getHealth();
 			Clock.yield();
 		}
 	}
