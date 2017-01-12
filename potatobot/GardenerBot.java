@@ -3,7 +3,7 @@ import battlecode.common.*;
 
 public class GardenerBot extends Globals
 {
-	public static void loop()
+	public static void loop()throws GameActionException
 	{
 		while (true)
 		{

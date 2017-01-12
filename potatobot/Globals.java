@@ -37,13 +37,28 @@ public class Globals
 				);
 	}
 	
-	static void updateLocation()
+	public static void updateLocation()
 	{
 		here = rc.getLocation();
 	}
 	
-	static Direction randomDirection() 
+	public static Direction randomDirection() 
 	{
         return new Direction((float)Math.random() * 2 * (float)Math.PI);
     }
+	
+	public static void wander()throws GameActionException
+	{
+		int tries = 0;
+		while (tries < 5)
+		{
+			Direction randomDir = randomDirection();
+			if (rc.canMove(randomDir))
+			{
+				rc.move(randomDir);
+				return;
+			}
+			tries++;
+		}
+	}
 }

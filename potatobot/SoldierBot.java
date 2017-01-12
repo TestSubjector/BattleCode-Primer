@@ -3,7 +3,7 @@ import battlecode.common.*;
 
 public class SoldierBot extends Globals
 {
-	public static void loop()
+	public static void loop()throws GameActionException
 	{
 		while (true)
 		{
