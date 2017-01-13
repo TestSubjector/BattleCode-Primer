@@ -3,27 +3,52 @@ import battlecode.common.*;
 
 public class GardenerBot extends Globals
 {
+	private static boolean isFarmer;
+	private static Direction plantDirection;
 	public static void loop()throws GameActionException
 	{
+		isFarmer = shouldIBeAFarmer();
+		plantDirection = here.directionTo(theirInitialArchonCentre);
 		while (true)
 		{
 			header();
-			int scouts = robotCount[RobotType.SCOUT.ordinal()];
-			if (bullets > 1.25 * RobotType.SCOUT.bulletCost && scouts < robotCountMax[RobotType.SCOUT.ordinal()])
+			if (isFarmer)
 			{
-				spawn(RobotType.SCOUT);
+				tryToPlant();
 			}
 			else
 			{
-				tryToPlant();
-				tryToWater();
+				int scouts = robotCount[RobotType.SCOUT.ordinal()];
+				if (treesPlanted > 6 && scouts < robotCountMax[RobotType.SCOUT.ordinal()])
+				{
+					spawn(RobotType.SCOUT);
+				}
 			}
+			tryToWater();
 			wander();
 			footer();
 		}
 	}
 	
-	public static void spawn(RobotType type)throws GameActionException
+	private static boolean shouldIBeAFarmer()throws GameActionException
+	{
+		updateRobotCount();
+		int gardeners = robotCount[myType.ordinal()];
+		if (gardeners <= 4)
+		{
+			return true;
+		}
+		else
+		{
+			if (gardeners % 3 == 1)
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	private static void spawn(RobotType type)throws GameActionException
 	{
 		int tries = 0;
 		while (tries < 5)
@@ -39,17 +64,17 @@ public class GardenerBot extends Globals
 		}
 	}
 	
-	public static void tryToPlant()throws GameActionException
+	private static void tryToPlant()throws GameActionException
 	{
 		if (bullets > GameConstants.BULLET_TREE_COST)
 		{
 			int tries = 0;
-			while (tries < 50)
+			while (tries < 10)
 			{
-				Direction randomDir = randomDirection();
-				if (rc.canPlantTree(randomDir)) 
+				plantDirection = plantDirection.rotateLeftDegrees(5);
+				if (rc.canPlantTree(plantDirection)) 
 				{
-	                rc.plantTree(randomDir);
+	                rc.plantTree(plantDirection);
 	                return;
 	            }
 				tries++;
@@ -57,7 +82,7 @@ public class GardenerBot extends Globals
 		}
 	}
 	
-	public static void tryToWater()throws GameActionException
+	private static void tryToWater()throws GameActionException
 	{
         if(rc.canWater()) 
         {

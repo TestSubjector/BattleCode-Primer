@@ -1,5 +1,4 @@
 package potatobot;
-import java.util.Arrays;
 
 import battlecode.common.*;
 
@@ -19,6 +18,8 @@ public class Globals
 	public static MapLocation theirInitialArchonCentre;
 	public static int[] robotCount;
 	public static int[] robotCountMax;
+	public static int treesPlanted;
+	public static final int TREE_CHANNEL = 64;
 	
 	public static void init(RobotController rcinit)throws GameActionException
 	{
@@ -46,9 +47,19 @@ public class Globals
 				theirInitialArchonCentre.y / n
 				);
 		robotCount = new int[6];
+		initRobotCountMax();
+		treesPlanted = 0;
+	}
+	
+	public static void initRobotCountMax()
+	{
 		robotCountMax = new int[6];
-		Arrays.fill(robotCountMax, 5);
-		robotCountMax[3] = 3;
+		robotCountMax[RobotType.ARCHON.ordinal()] = 3;
+		robotCountMax[RobotType.GARDENER.ordinal()] = 21;
+		robotCountMax[RobotType.LUMBERJACK.ordinal()] = 10;
+		robotCountMax[RobotType.SCOUT.ordinal()] = 5;
+		robotCountMax[RobotType.SOLDIER.ordinal()] = 10;
+		robotCountMax[RobotType.TANK.ordinal()] = 7;
 	}
 	
 	public static void updateLocation()
@@ -59,6 +70,11 @@ public class Globals
 	public static void updateBulletCount()
 	{
 		bullets = rc.getTeamBullets();
+	}
+	
+	public static void updateTreeCount()throws GameActionException
+	{
+		treesPlanted = rc.readBroadcast(TREE_CHANNEL);
 	}
 	
 	public static void updateRobotCount()throws GameActionException
@@ -77,7 +93,7 @@ public class Globals
 	public static void wander()throws GameActionException
 	{
 		int tries = 0;
-		while (tries < 50)
+		while (tries < 10)
 		{
 			Direction randomDir = randomDirection();
 			if (rc.canMove(randomDir))
@@ -109,6 +125,7 @@ public class Globals
 	public static void header()throws GameActionException
 	{
 		updateRobotCount();
+		updateTreeCount();
 		updateBulletCount();
 		if (dying())
 		{
