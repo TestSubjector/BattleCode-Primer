@@ -75,6 +75,8 @@ public class GardenerBot extends Globals
 				if (rc.canPlantTree(plantDirection)) 
 				{
 	                rc.plantTree(plantDirection);
+	                updateTreeCount();
+	                rc.broadcast(64, treesPlanted + 1);
 	                return;
 	            }
 				tries++;
