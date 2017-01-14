@@ -19,7 +19,7 @@ public class GardenerBot extends Globals
 			else
 			{
 				int scouts = robotCount[RobotType.SCOUT.ordinal()];
-				if (treesPlanted > 6 && scouts < robotCountMax[RobotType.SCOUT.ordinal()])
+				if (scouts < robotCountMax[RobotType.SCOUT.ordinal()])
 				{
 					spawn(RobotType.SCOUT);
 				}
@@ -34,13 +34,13 @@ public class GardenerBot extends Globals
 	{
 		updateRobotCount();
 		int gardeners = robotCount[myType.ordinal()];
-		if (gardeners <= 4)
+		if (gardeners <= 2)
 		{
 			return true;
 		}
 		else
 		{
-			if (gardeners % 3 == 1)
+			if (gardeners % 3 == 0)
 			{
 				return true;
 			}
