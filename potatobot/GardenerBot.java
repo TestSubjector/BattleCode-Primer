@@ -4,11 +4,16 @@ import battlecode.common.*;
 public class GardenerBot extends Globals
 {
 	private static boolean isFarmer;
-	private static Direction plantDirection;
+	private static Direction plantMoveDirection = Direction.getEast();
+	private static Direction plantDirection = Direction.getNorth();
+	private static int treesIPlanted = 0;
 	public static void loop()throws GameActionException
 	{
 		isFarmer = shouldIBeAFarmer();
-		plantDirection = here.directionTo(theirInitialArchonCentre);
+		if (isFarmer)
+		{
+			getClear();
+		}
 		while (true)
 		{
 			header();
@@ -23,29 +28,69 @@ public class GardenerBot extends Globals
 				{
 					spawn(RobotType.SCOUT);
 				}
+				wander();
 			}
-			tryToWater();
-			wander();
 			footer();
 		}
 	}
 	
-	private static boolean shouldIBeAFarmer()throws GameActionException
+	private static void getClear()throws GameActionException
 	{
-		updateRobotCount();
-		int gardeners = robotCount[myType.ordinal()];
-		if (gardeners <= 2)
+		if (!isClear(here))
+		{
+			MapLocation target = null;
+			for (float distance = 1; distance <= 3; distance++)
+			{
+				for (float degrees = 0; degrees < 360; degrees += 20)
+				{
+					MapLocation there = here.add(Direction.getEast().rotateLeftDegrees(degrees), distance);
+					if (isClear(there))
+					{
+						target = there;
+						rc.setIndicatorLine(here, there, 5, 5, 5);
+						break;
+					}
+				}
+				if (target != null)
+				{
+					break;
+				}
+			}
+			while (!isClear(here))
+			{
+				header();
+				if (target != null && !target.equals(here))
+				{
+					tryToMoveTowards(target);
+				}
+				else
+				{
+					wander();
+				}
+				footer();
+			}
+		}
+	}
+
+	private static boolean isClear(MapLocation location)throws GameActionException
+	{
+		if (!rc.isCircleOccupiedExceptByThisRobot(location, (float)3) && rc.onTheMap(location, (float)3))
 		{
 			return true;
 		}
-		else
-		{
-			if (gardeners % 3 == 0)
-			{
-				return true;
-			}
-		}
 		return false;
+	}
+
+	private static boolean shouldIBeAFarmer()throws GameActionException
+	{
+		updateRobotCount();
+		return true;
+		/*int gardeners = robotCount[myType.ordinal()];
+		if (gardeners % 2 == 0)
+		{
+			return true;
+		}
+		return false;*/
 	}
 	
 	private static void spawn(RobotType type)throws GameActionException
@@ -68,18 +113,51 @@ public class GardenerBot extends Globals
 	{
 		if (bullets > GameConstants.BULLET_TREE_COST)
 		{
-			int tries = 0;
-			while (tries < 10)
+			if (treesIPlanted < 4)
 			{
-				plantDirection = plantDirection.rotateLeftDegrees(5);
-				if (rc.canPlantTree(plantDirection)) 
+	            tryToMove(plantMoveDirection);
+	            footer();
+	            header();
+	            tryToMove(plantMoveDirection);
+	            footer();
+	            header();
+	            tryToMoveThisMuch(plantMoveDirection, 0.1f);
+	            footer();
+	            header();
+	            rc.setIndicatorLine(here, here.add(plantDirection, 4), 24, 1, 22);
+	            while (!rc.canPlantTree(plantDirection))
+	            {
+	            	footer();
+	            	header();
+	            }
+                rc.plantTree(plantDirection);
+                treesIPlanted++;
+                updateTreeCount();
+                rc.broadcast(TREE_CHANNEL, treesPlanted + 1);
+                plantDirection = plantDirection.opposite();
+				tryToMove(plantMoveDirection.opposite());
+                footer();
+                header();
+                tryToMove(plantMoveDirection.opposite());
+	            footer();
+	            header();
+	            tryToMoveThisMuch(plantMoveDirection.opposite(), 0.1f);
+                if (treesIPlanted == 2)
+                {
+                	plantMoveDirection = plantMoveDirection.opposite();
+                }
+			}
+			else
+			{
+				if (rc.canPlantTree(plantDirection))
 				{
 	                rc.plantTree(plantDirection);
+	                plantDirection = plantDirection.rotateLeftDegrees(90);
+	                treesIPlanted++;
 	                updateTreeCount();
-	                rc.broadcast(64, treesPlanted + 1);
+	                rc.broadcast(TREE_CHANNEL, treesPlanted + 1);
 	                return;
-	            }
-				tries++;
+				}
 			}
 		}
 	}
@@ -100,4 +178,10 @@ public class GardenerBot extends Globals
                 }
         }
     }
+	
+	public static void footer()throws GameActionException
+	{
+		tryToWater();
+		Globals.footer();
+	}
 }

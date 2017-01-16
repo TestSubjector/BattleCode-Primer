@@ -8,19 +8,15 @@ public class ArchonBot extends Globals
 		while (true)
 		{
 			header();
+			updateBulletCount();
+			if (bullets >= 10000)
+			{
+				rc.donate(10000);
+			}
 			int gardeners = robotCount[RobotType.GARDENER.ordinal()];
-			if ((gardeners < 3 || treesPlanted > 6) && gardeners < robotCountMax[RobotType.GARDENER.ordinal()])
+			if (gardeners < robotCountMax[RobotType.GARDENER.ordinal()])
 			{
 				tryHiringGardener(gardeners);
-			}
-			updateBulletCount();
-			if (bullets > 500)
-			{
-				int donation = (int)(Math.floor((bullets / ourInitialArchons.length) / 100) * 10);
-				if (donation > 0)
-				{
-					rc.donate(donation);
-				}
 			}
 			wander();
 			footer();

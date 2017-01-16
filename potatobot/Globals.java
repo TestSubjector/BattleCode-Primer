@@ -1,5 +1,5 @@
 package potatobot;
-
+import java.util.ArrayList;
 import battlecode.common.*;
 
 public class Globals 
@@ -18,7 +18,11 @@ public class Globals
 	public static MapLocation theirInitialArchonCentre;
 	public static int[] robotCount;
 	public static int[] robotCountMax;
+	public static RobotInfo[] allies;
+	public static RobotInfo[] enemies;
+	public static TreeInfo[] trees;
 	public static int treesPlanted;
+	public static ArrayList<Integer> beenHere;
 	public static final int TREE_CHANNEL = 64;
 	public static final int tryAngles[] = {0, 10, -10, 20, -20, 30, -30, 40, -40, 45, -45};
 	
@@ -35,6 +39,7 @@ public class Globals
 		ourInitialArchons = rc.getInitialArchonLocations(us);
 		theirInitialArchons = rc.getInitialArchonLocations(them);
 		theirInitialArchonCentre = theirInitialArchons[0];
+		beenHere = new ArrayList<Integer>(10);
 		int n = theirInitialArchons.length;
 		for (int i = 1; i < n; i++)
 		{
@@ -171,7 +176,10 @@ public class Globals
 			MapLocation bulletLocation = sensedBullet.getLocation();
 			if (willHitRobot(me, bulletDirection, bulletLocation))
 			{
-				sideStep(bulletDirection);
+				if (sideStep(bulletDirection))
+				{
+					return;
+				}
 			}
 		}
 	}
@@ -185,7 +193,7 @@ public class Globals
 		return tryToMove(bulletDirection.rotateRightDegrees(90));
 	}
 
-	private static boolean tryToMove(Direction movingDirection)throws GameActionException
+	public static boolean tryToMove(Direction movingDirection)throws GameActionException
 	{
 		if (rc.hasMoved())
 		{
@@ -203,12 +211,39 @@ public class Globals
 		}
 		return false;
 	}
+	
+	public static boolean tryToMoveThisMuch(Direction movingDirection, float distance)throws GameActionException
+	{
+		if (rc.hasMoved())
+		{
+			return false;
+		}
+		for (int angle: tryAngles)
+		{
+			Direction candidateDirection = movingDirection.rotateLeftDegrees(angle);
+			if (rc.canMove(candidateDirection, distance))
+			{
+				rc.move(candidateDirection, distance);
+				updateLocation();
+				return true;
+			}
+		}
+		return false;
+	}
 
+	public static boolean tryToMoveTowards(MapLocation location)throws GameActionException
+	{
+		return tryToMove(here.directionTo(location));
+	}
+	
 	public static void header()throws GameActionException
 	{
 		updateRobotCount();
 		updateTreeCount();
 		updateBulletCount();
+		allies = rc.senseNearbyRobots();
+		enemies = rc.senseNearbyRobots();
+		trees = rc.senseNearbyTrees();
 		if (dying())
 		{
 			imDying();
