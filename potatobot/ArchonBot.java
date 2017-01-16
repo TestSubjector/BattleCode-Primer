@@ -5,6 +5,7 @@ public class ArchonBot extends Globals
 {
 	public static void loop()throws GameActionException
 	{
+		Direction random = randomDirection();
 		while (true)
 		{
 			header();
@@ -18,7 +19,10 @@ public class ArchonBot extends Globals
 			{
 				tryHiringGardener(gardeners);
 			}
-			wander();
+			if (!tryToMove(random))
+			{
+				random = randomDirection();
+			}
 			footer();
 		}
 	}

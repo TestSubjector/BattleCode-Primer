@@ -3,21 +3,21 @@ import battlecode.common.*;
 
 public class GardenerBot extends Globals
 {
-	private static boolean isFarmer;
+	private static boolean amFarmer;
 	private static Direction plantMoveDirection = Direction.getEast();
 	private static Direction plantDirection = Direction.getNorth();
 	private static int treesIPlanted = 0;
 	public static void loop()throws GameActionException
 	{
-		isFarmer = shouldIBeAFarmer();
-		if (isFarmer)
+		amFarmer = shouldIBeAFarmer();
+		if (amFarmer)
 		{
 			getClear();
 		}
 		while (true)
 		{
 			header();
-			if (isFarmer)
+			if (amFarmer)
 			{
 				tryToPlant();
 			}
@@ -56,6 +56,7 @@ public class GardenerBot extends Globals
 					break;
 				}
 			}
+			int attempts = 0;
 			while (!isClear(here))
 			{
 				header();
@@ -68,6 +69,12 @@ public class GardenerBot extends Globals
 					wander();
 				}
 				footer();
+				attempts++;
+				if (attempts > 25)
+				{
+					amFarmer = false;
+					return;
+				}
 			}
 		}
 	}
