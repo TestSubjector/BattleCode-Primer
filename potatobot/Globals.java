@@ -20,7 +20,8 @@ public class Globals
 	public static int[] robotCountMax;
 	public static RobotInfo[] allies;
 	public static RobotInfo[] enemies;
-	public static TreeInfo[] trees;
+	public static TreeInfo[] neutralTrees;
+	public static TreeInfo[] enemyTrees;
 	public static int treesPlanted;
 	public static ArrayList<Integer> beenHere;
 	public static final int TREE_CHANNEL = 64;
@@ -244,13 +245,14 @@ public class Globals
 		updateBulletCount();
 		allies = rc.senseNearbyRobots(-1, us);
 		enemies = rc.senseNearbyRobots(-1, them);
-		trees = rc.senseNearbyTrees(-1, Team.NEUTRAL);
+		neutralTrees = rc.senseNearbyTrees(-1, Team.NEUTRAL);
+		enemyTrees = rc.senseNearbyTrees(-1, them);
 		if (dying())
 		{
 			imDying();
 		}
 		tryToDodge();
-		for (TreeInfo tree : trees)
+		for (TreeInfo tree : neutralTrees)
 		{
 			if (tree.getContainedBullets() > 0 || tree.getContainedRobot() != null)
 			{
@@ -261,7 +263,7 @@ public class Globals
 			}
 		}
 	}
-	
+
 	public static void footer()throws GameActionException
 	{
 		prevHealth = rc.getHealth();

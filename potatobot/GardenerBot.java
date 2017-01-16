@@ -111,7 +111,7 @@ public class GardenerBot extends Globals
 				}
 				footer();
 				attempts++;
-				if (attempts > 40)
+				if (attempts > 80)
 				{
 					amFarmer = false;
 					return;

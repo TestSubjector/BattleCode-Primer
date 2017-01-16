@@ -19,13 +19,27 @@ public class LumberjackBot extends Globals
 					}
 				}
 			}
-			
-			if (trees.length != 0)
+			if (enemyTrees.length != 0)
 			{
-				tryToMoveTowards(trees[0].getLocation());
-				if (rc.canChop(trees[0].getID()))
+				tryToMoveTowards(enemyTrees[0].getLocation());
+				if (rc.canChop(enemyTrees[0].getID()))
 				{
-					rc.chop(trees[0].getID());
+					rc.chop(enemyTrees[0].getID());
+				}
+				else if (neutralTrees.length != 0)
+				{
+					if (rc.canChop(neutralTrees[0].getID()))
+					{
+						rc.chop(neutralTrees[0].getID());
+					}
+				}
+			}
+			else if (neutralTrees.length != 0)
+			{
+				tryToMoveTowards(neutralTrees[0].getLocation());
+				if (rc.canChop(neutralTrees[0].getID()))
+				{
+					rc.chop(neutralTrees[0].getID());
 				}
 			}
 			else
