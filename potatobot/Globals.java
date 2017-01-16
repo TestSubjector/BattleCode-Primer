@@ -24,6 +24,7 @@ public class Globals
 	public static int treesPlanted;
 	public static ArrayList<Integer> beenHere;
 	public static final int TREE_CHANNEL = 64;
+	public static final int BUILD_CHANNEL = 42;
 	public static final int tryAngles[] = {0, 10, -10, 20, -20, 30, -30, 40, -40, 45, -45};
 	
 	public static void init(RobotController rcinit)throws GameActionException
@@ -62,8 +63,8 @@ public class Globals
 		robotCountMax = new int[6];
 		robotCountMax[RobotType.ARCHON.ordinal()] = 3;
 		robotCountMax[RobotType.GARDENER.ordinal()] = 21;
-		robotCountMax[RobotType.LUMBERJACK.ordinal()] = 10;
-		robotCountMax[RobotType.SCOUT.ordinal()] = 10;
+		robotCountMax[RobotType.LUMBERJACK.ordinal()] = 15;
+		robotCountMax[RobotType.SCOUT.ordinal()] = 15;
 		robotCountMax[RobotType.SOLDIER.ordinal()] = 10;
 		robotCountMax[RobotType.TANK.ordinal()] = 7;
 	}
@@ -241,14 +242,24 @@ public class Globals
 		updateRobotCount();
 		updateTreeCount();
 		updateBulletCount();
-		allies = rc.senseNearbyRobots();
-		enemies = rc.senseNearbyRobots();
-		trees = rc.senseNearbyTrees();
+		allies = rc.senseNearbyRobots(-1, us);
+		enemies = rc.senseNearbyRobots(-1, them);
+		trees = rc.senseNearbyTrees(-1, Team.NEUTRAL);
 		if (dying())
 		{
 			imDying();
 		}
 		tryToDodge();
+		for (TreeInfo tree : trees)
+		{
+			if (tree.getContainedBullets() > 0 || tree.getContainedRobot() != null)
+			{
+				if (rc.canShake(tree.getID()))
+				{
+					rc.shake(tree.getID());
+				}
+			}
+		}
 	}
 	
 	public static void footer()throws GameActionException

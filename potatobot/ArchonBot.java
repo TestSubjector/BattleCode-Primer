@@ -30,13 +30,12 @@ public class ArchonBot extends Globals
 	public static void tryHiringGardener(int gardeners)throws GameActionException
 	{
 		int tries = 0;
-		while (tries < 5)
+		while (tries < 15)
 		{
 			Direction randomDir = randomDirection();
 			if (rc.canHireGardener(randomDir))
 			{
 				rc.hireGardener(randomDir);
-				rc.broadcast(RobotType.GARDENER.ordinal(), gardeners + 1);
 				break;
 			}
 			tries++;

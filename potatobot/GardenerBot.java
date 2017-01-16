@@ -9,6 +9,9 @@ public class GardenerBot extends Globals
 	private static int treesIPlanted = 0;
 	public static void loop()throws GameActionException
 	{
+		updateRobotCount();
+		int gardeners = robotCount[RobotType.GARDENER.ordinal()];
+		rc.broadcast(RobotType.GARDENER.ordinal(), gardeners + 1);
 		amFarmer = shouldIBeAFarmer();
 		if (amFarmer)
 		{
@@ -23,15 +26,53 @@ public class GardenerBot extends Globals
 			}
 			else
 			{
-				int scouts = robotCount[RobotType.SCOUT.ordinal()];
-				if (scouts < robotCountMax[RobotType.SCOUT.ordinal()])
+				int buildThis = rc.readBroadcast(BUILD_CHANNEL);
+				switch (buildThis)
 				{
-					spawn(RobotType.SCOUT);
+					case 0:
+						rc.broadcast(BUILD_CHANNEL, 2);
+						break;
+
+					case 2:
+						int lumberjacks = robotCount[RobotType.LUMBERJACK.ordinal()];
+						if (lumberjacks < robotCountMax[RobotType.LUMBERJACK.ordinal()])
+						{
+							if (spawn(RobotType.LUMBERJACK))
+							{
+								rc.broadcast(BUILD_CHANNEL, 3);
+							}
+						}
+						break;
+					
+					case 3:
+						int scouts = robotCount[RobotType.SCOUT.ordinal()];
+						if (scouts < robotCountMax[RobotType.SCOUT.ordinal()])
+						{
+							if (spawn(RobotType.SCOUT))
+							{
+								rc.broadcast(BUILD_CHANNEL, 2);
+							}
+						}
+						break;
+					
+					default:
+						System.out.println("Bro wtf");
 				}
 				wander();
 			}
 			footer();
 		}
+	}
+
+	private static boolean shouldIBeAFarmer()throws GameActionException
+	{
+		updateRobotCount();
+		int gardeners = robotCount[myType.ordinal()];
+		if (gardeners % 2 == 0)
+		{
+			return true;
+		}
+		return false;
 	}
 	
 	private static void getClear()throws GameActionException
@@ -70,7 +111,7 @@ public class GardenerBot extends Globals
 				}
 				footer();
 				attempts++;
-				if (attempts > 25)
+				if (attempts > 40)
 				{
 					amFarmer = false;
 					return;
@@ -88,32 +129,22 @@ public class GardenerBot extends Globals
 		return false;
 	}
 
-	private static boolean shouldIBeAFarmer()throws GameActionException
-	{
-		updateRobotCount();
-		return true;
-		/*int gardeners = robotCount[myType.ordinal()];
-		if (gardeners % 2 == 0)
-		{
-			return true;
-		}
-		return false;*/
-	}
 	
-	private static void spawn(RobotType type)throws GameActionException
+	private static boolean spawn(RobotType type)throws GameActionException
 	{
 		int tries = 0;
-		while (tries < 5)
+		while (tries < 10)
 		{
 			Direction randomDir = randomDirection();
 			if (rc.canBuildRobot(type, randomDir))
 			{
 				rc.buildRobot(type, randomDir);
 				rc.broadcast(type.ordinal(), robotCount[type.ordinal()] + 1);
-				return;
+				return true;
 			}
 			tries++;
 		}
+		return false;
 	}
 	
 	private static void tryToPlant()throws GameActionException
