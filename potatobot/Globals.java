@@ -23,9 +23,23 @@ public class Globals
 	public static TreeInfo[] neutralTrees;
 	public static TreeInfo[] enemyTrees;
 	public static int treesPlanted;
+	public static boolean haveTarget;
 	public static ArrayList<Integer> beenHere;
 	public static final int TREE_CHANNEL = 64;
 	public static final int BUILD_CHANNEL = 42;
+	public static int numberOfArchons;
+	public static final int ENEMY_ARCHON_CHANNELS[] = {43, 44, 45, 46, 47, 48, 49, 50, 51};
+	/* The channels represent:
+	 * 43 = Number of Enemy Archons detected till now
+	 * 44 = ID of 1st detected Enemy Archon
+	 * 45 = Last known (hashed) location of the 1st detected Enemy Archon
+	 * 46 = ID of the 2nd detected Enemy Archon
+	 * 47 = Last known (hashed) location of the 2nd detected Enemy Archon
+	 * 48 = ID of the 3rd detected Enemy Archon
+	 * 49 = Last known (hashed) location of the 3rd detected Enemy Archon
+	 * 50 = Index (from 1 to 3) of the currently targeted Enemy Archon
+	 * 51 = Round Number of the most recent encounter with an Enemy Archon
+	 */
 	public static final int tryAngles[] = {0, 10, -10, 20, -20, 30, -30, 40, -40, 45, -45};
 	
 	public static void init(RobotController rcinit)throws GameActionException
@@ -40,6 +54,7 @@ public class Globals
 		them = us.opponent();
 		ourInitialArchons = rc.getInitialArchonLocations(us);
 		theirInitialArchons = rc.getInitialArchonLocations(them);
+		numberOfArchons = theirInitialArchons.length;
 		theirInitialArchonCentre = theirInitialArchons[0];
 		beenHere = new ArrayList<Integer>(10);
 		int n = theirInitialArchons.length;
@@ -57,6 +72,7 @@ public class Globals
 		robotCount = new int[6];
 		initRobotCountMax();
 		treesPlanted = 0;
+		haveTarget = false;
 	}
 	
 	public static void initRobotCountMax()
@@ -64,12 +80,26 @@ public class Globals
 		robotCountMax = new int[6];
 		robotCountMax[RobotType.ARCHON.ordinal()] = 3;
 		robotCountMax[RobotType.GARDENER.ordinal()] = 21;
-		robotCountMax[RobotType.LUMBERJACK.ordinal()] = 15;
-		robotCountMax[RobotType.SCOUT.ordinal()] = 15;
+		robotCountMax[RobotType.LUMBERJACK.ordinal()] = 10;
+		robotCountMax[RobotType.SCOUT.ordinal()] = 25;
 		robotCountMax[RobotType.SOLDIER.ordinal()] = 10;
 		robotCountMax[RobotType.TANK.ordinal()] = 7;
 	}
 	
+	public static int hashIt(MapLocation location)
+	{
+		int x = (int)Math.round(location.x);
+		int y = (int)Math.round(location.y);
+		int hashValue = ((10000) * x + y);
+		return hashValue;
+		
+	}
+	 
+	public static MapLocation unHashIt(int x)
+	{
+		MapLocation location = new MapLocation((x / (10000)), (x % (10000)));
+		return location;
+	}
 	public static void updateLocation()
 	{
 		here = rc.getLocation();
@@ -91,6 +121,59 @@ public class Globals
 		{
 			robotCount[i] = rc.readBroadcast(i);
 		}
+	}
+
+	private static void updateEnemyArchons()throws GameActionException 
+	{
+		int numberOfArchonsFound = rc.readBroadcast(ENEMY_ARCHON_CHANNELS[0]);
+		for (RobotInfo enemy : enemies)
+		{
+			if (enemy.getType() == RobotType.ARCHON)
+			{
+				rc.broadcast(ENEMY_ARCHON_CHANNELS[8], rc.getRoundNum());
+				boolean found = false; // initial value
+				for (int i = 1; i < numberOfArchonsFound * 2; i += 2)
+				{
+					int ID = rc.readBroadcast(ENEMY_ARCHON_CHANNELS[i]);
+					if (enemy.getID() == ID)
+					{
+						found = true; // already seen this Archon
+						break;
+					}
+				}
+				if (!found)
+				{
+					int hashedLocation = hashIt(enemy.getLocation());
+					rc.broadcast(ENEMY_ARCHON_CHANNELS[numberOfArchonsFound * 2 + 1], enemy.getID());
+					rc.broadcast(ENEMY_ARCHON_CHANNELS[numberOfArchonsFound * 2 + 2], hashedLocation);
+					numberOfArchonsFound++;
+					rc.broadcast(ENEMY_ARCHON_CHANNELS[0], numberOfArchonsFound);
+				}
+			}
+		}
+		float minHealth = 500000;
+		int minIndex = 0;
+		for (int i = 1; i < numberOfArchonsFound * 2; i += 2)
+		{
+			int ID = rc.readBroadcast(ENEMY_ARCHON_CHANNELS[i]);
+			if (rc.canSenseRobot(ID))
+			{
+				RobotInfo sensedRobot = rc.senseRobot(ID);
+				int hashedLocation = hashIt(sensedRobot.getLocation());
+				float healthRemaining = rc.getHealth();
+				rc.broadcast(ENEMY_ARCHON_CHANNELS[i + 1], hashedLocation);
+				if (healthRemaining < minHealth)
+				{
+					minHealth = healthRemaining;
+					minIndex = (i + 1) / 2;
+				}
+			}
+			if (minIndex != 0)
+			{
+				rc.broadcast(ENEMY_ARCHON_CHANNELS[7], minIndex);
+			}
+		}
+		haveTarget = ((rc.readBroadcast(ENEMY_ARCHON_CHANNELS[7]) > 0) && ((rc.getRoundNum() - rc.readBroadcast(ENEMY_ARCHON_CHANNELS[8])) < 20));
 	}
 	
 	public static Direction randomDirection() 
@@ -252,13 +335,20 @@ public class Globals
 			imDying();
 		}
 		tryToDodge();
+		updateEnemyArchons();
 		for (TreeInfo tree : neutralTrees)
 		{
-			if (tree.getContainedBullets() > 0 || tree.getContainedRobot() != null)
+			if (tree.getContainedBullets() > 0)
 			{
 				if (rc.canShake(tree.getID()))
 				{
 					rc.shake(tree.getID());
+				}
+				if (rc.getType() == RobotType.SCOUT)
+				{
+					tryToMoveTowards(tree.getLocation());
+					footer();
+					header();
 				}
 			}
 		}

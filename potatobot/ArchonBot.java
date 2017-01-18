@@ -3,9 +3,10 @@ import battlecode.common.*;
 
 public class ArchonBot extends Globals
 {
+	private static int gardenerTime = 20;
 	public static void loop()throws GameActionException
 	{
-		Direction random = randomDirection();
+		Direction movingDirection = randomDirection();
 		while (true)
 		{
 			header();
@@ -15,14 +16,33 @@ public class ArchonBot extends Globals
 				rc.donate(10000);
 			}
 			int gardeners = robotCount[RobotType.GARDENER.ordinal()];
-			if (gardeners < robotCountMax[RobotType.GARDENER.ordinal()])
+			if (gardeners < robotCountMax[RobotType.GARDENER.ordinal()] && gardenerTime >= 15)
 			{
 				tryHiringGardener(gardeners);
 			}
-			if (!tryToMove(random))
+			Direction awayFromOtherArchon = null;
+			for (RobotInfo ally : allies)
 			{
-				random = randomDirection();
+				if (ally.getType() == RobotType.ARCHON);
+				{
+					awayFromOtherArchon = ally.getLocation().directionTo(here);
+					break;
+				}
 			}
+			if (awayFromOtherArchon != null)
+			{
+				movingDirection = awayFromOtherArchon;
+			}
+			while (!tryToMove(movingDirection) && Clock.getBytecodesLeft() > 1000)
+			{
+				Direction newDirection = randomDirection();
+				while (Math.abs(newDirection.degreesBetween(movingDirection)) > 100)
+				{
+					newDirection = randomDirection();
+				}
+				movingDirection = newDirection;
+			}
+			gardenerTime++;
 			footer();
 		}
 	}
@@ -36,6 +56,7 @@ public class ArchonBot extends Globals
 			if (rc.canHireGardener(randomDir))
 			{
 				rc.hireGardener(randomDir);
+				gardenerTime = 0;
 				break;
 			}
 			tries++;

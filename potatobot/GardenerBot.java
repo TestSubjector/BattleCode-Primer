@@ -26,41 +26,54 @@ public class GardenerBot extends Globals
 			}
 			else
 			{
-				int buildThis = rc.readBroadcast(BUILD_CHANNEL);
-				switch (buildThis)
-				{
-					case 0:
-						rc.broadcast(BUILD_CHANNEL, 2);
-						break;
-
-					case 2:
-						int lumberjacks = robotCount[RobotType.LUMBERJACK.ordinal()];
-						if (lumberjacks < robotCountMax[RobotType.LUMBERJACK.ordinal()])
-						{
-							if (spawn(RobotType.LUMBERJACK))
-							{
-								rc.broadcast(BUILD_CHANNEL, 3);
-							}
-						}
-						break;
-					
-					case 3:
-						int scouts = robotCount[RobotType.SCOUT.ordinal()];
-						if (scouts < robotCountMax[RobotType.SCOUT.ordinal()])
-						{
-							if (spawn(RobotType.SCOUT))
-							{
-								rc.broadcast(BUILD_CHANNEL, 2);
-							}
-						}
-						break;
-					
-					default:
-						System.out.println("Bro wtf");
-				}
+				tryToBuild();
 				wander();
 			}
 			footer();
+		}
+	}
+
+	private static void tryToBuild()throws GameActionException
+	{		
+		int buildThis = rc.readBroadcast(BUILD_CHANNEL);
+		switch (buildThis)
+		{
+			case 0:
+				rc.broadcast(BUILD_CHANNEL, 3);
+				break;
+	
+			case 2:
+				int lumberjacks = robotCount[RobotType.LUMBERJACK.ordinal()];
+				if (lumberjacks < robotCountMax[RobotType.LUMBERJACK.ordinal()])
+				{
+					if (spawn(RobotType.LUMBERJACK))
+					{
+						rc.broadcast(BUILD_CHANNEL, 3);
+					}
+				}
+				else
+				{
+					rc.broadcast(BUILD_CHANNEL, 3);
+				}
+				break;
+			
+			case 3:
+				int scouts = robotCount[RobotType.SCOUT.ordinal()];
+				if (scouts < robotCountMax[RobotType.SCOUT.ordinal()])
+				{
+					if (spawn(RobotType.SCOUT))
+					{
+						rc.broadcast(BUILD_CHANNEL, 2);
+					}
+				}
+				else
+				{
+					rc.broadcast(BUILD_CHANNEL, 2);
+				}
+				break;
+			
+			default:
+				System.out.println("Bro wtf");
 		}
 	}
 
@@ -68,7 +81,7 @@ public class GardenerBot extends Globals
 	{
 		updateRobotCount();
 		int gardeners = robotCount[myType.ordinal()];
-		if (gardeners % 2 == 0)
+		if (gardeners % 2 == 1)
 		{
 			return true;
 		}
@@ -88,7 +101,6 @@ public class GardenerBot extends Globals
 					if (isClear(there))
 					{
 						target = there;
-						rc.setIndicatorLine(here, there, 5, 5, 5);
 						break;
 					}
 				}
@@ -97,10 +109,10 @@ public class GardenerBot extends Globals
 					break;
 				}
 			}
-			int attempts = 0;
 			while (!isClear(here))
 			{
 				header();
+				tryToBuild();
 				if (target != null && !target.equals(here))
 				{
 					tryToMoveTowards(target);
@@ -110,12 +122,6 @@ public class GardenerBot extends Globals
 					wander();
 				}
 				footer();
-				attempts++;
-				if (attempts > 80)
-				{
-					amFarmer = false;
-					return;
-				}
 			}
 		}
 	}
@@ -133,7 +139,7 @@ public class GardenerBot extends Globals
 	private static boolean spawn(RobotType type)throws GameActionException
 	{
 		int tries = 0;
-		while (tries < 10)
+		while (tries < 20)
 		{
 			Direction randomDir = randomDirection();
 			if (rc.canBuildRobot(type, randomDir))
