@@ -5,7 +5,7 @@ public class TankBot extends Globals
 {
 	public static void loop()throws GameActionException
 	{
-		Direction random = randomDirection();
+		movingDirection = here.directionTo(theirInitialArchons[0]);
 		while (true)
 		{
 			header();
@@ -13,13 +13,12 @@ public class TankBot extends Globals
 			{
 				int targetArchonLocationIndex = rc.readBroadcast(ENEMY_ARCHON_CHANNELS[7]) * 2;
 				int hashedTargetLocation = rc.readBroadcast(ENEMY_ARCHON_CHANNELS[targetArchonLocationIndex]);
-				MapLocation targetLocation = unHashIt(hashedTargetLocation);
-				System.out.println(targetLocation);
+				MapLocation targetLocation = unhashIt(hashedTargetLocation);
 				tryToMoveTowards(targetLocation);
 			}
-			else if (!tryToMove(random))
+			else if (!tryToMove(movingDirection))
 			{
-				random = randomDirection();
+				movingDirection = randomDirection();
 			}
 			for (RobotInfo enemy : enemies)
 			{

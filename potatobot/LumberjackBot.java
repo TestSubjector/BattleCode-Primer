@@ -42,9 +42,9 @@ public class LumberjackBot extends Globals
 					rc.chop(neutralTrees[0].getID());
 				}
 			}
-			else
+			else if (!tryToMove(movingDirection))
 			{
-				wander();
+				movingDirection = randomDirection();
 			}
 			footer();
 		}
