@@ -420,7 +420,7 @@ public class Globals
 			RobotInfo[] allies = rc.senseNearbyRobots(-1, us);
 			for (RobotInfo ally : allies)
 			{
-				if (willHitRobot(ally, shotDirection, here) && ally.getLocation().distanceTo(here) > enemy.getLocation().distanceTo(here))
+				if (willHitRobot(ally, shotDirection, here) && ally.getLocation().distanceTo(here) < enemy.getLocation().distanceTo(here))
 				{
 					killingFriend = true;
 				}
