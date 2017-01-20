@@ -8,11 +8,6 @@ public class ArchonBot extends Globals
 		while (true)
 		{
 			header();
-			updateBulletCount();
-			if (bullets >= 10000)
-			{
-				rc.donate(10000);
-			}
 			int gardeners = robotCount[RobotType.GARDENER.ordinal()];
 			int scouts = robotCount[RobotType.SCOUT.ordinal()];
 			int lumberjacks = robotCount[RobotType.LUMBERJACK.ordinal()];

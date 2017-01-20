@@ -268,6 +268,7 @@ public class GardenerBot extends Globals
         {
             TreeInfo[] nearbyTrees = rc.senseNearbyTrees();
             for (TreeInfo tree : nearbyTrees)
+            {
                 if(tree.getHealth() < GameConstants.BULLET_TREE_MAX_HEALTH - GameConstants.WATER_HEALTH_REGEN_RATE) 
                 {
                     if (rc.canWater(tree.getID())) 
@@ -276,6 +277,7 @@ public class GardenerBot extends Globals
                         break;
                     }
                 }
+            }
         }
     }
 	

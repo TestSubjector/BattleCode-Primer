@@ -153,7 +153,6 @@ public class Globals
 		int y = (int)Math.round(location.y * 10);
 		int hashValue = ((hasher) * x + y);
 		return hashValue;
-		
 	}
 	 
 	public static MapLocation unhashIt(int h)
@@ -443,6 +442,10 @@ public class Globals
 		updateRobotCount();
 		updateTreeCount();
 		updateBulletCount();
+		if (bullets >= 10000)
+		{
+			rc.donate(10000);
+		}
 		allies = rc.senseNearbyRobots(-1, us);
 		enemies = rc.senseNearbyRobots(-1, them);
 		neutralTrees = rc.senseNearbyTrees(-1, Team.NEUTRAL);
