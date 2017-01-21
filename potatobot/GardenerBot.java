@@ -152,12 +152,12 @@ public class GardenerBot extends Globals
 				{
 					if (spawn(RobotType.LUMBERJACK))
 					{
-						rc.broadcast(BUILD_CHANNEL, 3);
+						rc.broadcast(BUILD_CHANNEL, 4);
 					}
 				}
 				else
 				{
-					rc.broadcast(BUILD_CHANNEL, 3);
+					rc.broadcast(BUILD_CHANNEL, 4);
 				}
 				break;
 			
@@ -176,6 +176,21 @@ public class GardenerBot extends Globals
 				}
 				break;
 			
+			case 4:
+				int soldiers = robotCount[RobotType.SOLDIER.ordinal()];
+				if (soldiers < robotCountMax[RobotType.SOLDIER.ordinal()])
+				{
+					if (spawn(RobotType.SOLDIER))
+					{
+						rc.broadcast(BUILD_CHANNEL, 3);
+					}
+				}
+				else
+				{
+					rc.broadcast(BUILD_CHANNEL, 3);
+				}
+				break;	
+				
 			default:
 				System.out.println("Bro wtf");
 		}

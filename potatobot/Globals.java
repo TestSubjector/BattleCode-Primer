@@ -413,11 +413,10 @@ public class Globals
 	
 	public static void trySingleShot(RobotInfo enemy)throws GameActionException
 	{
-		if (Clock.getBytecodesLeft() > (2 * myType.bytecodeLimit / 3) && rc.canFireSingleShot())
+		if (rc.canFireSingleShot())
 		{
 			Direction shotDirection = here.directionTo(enemy.getLocation());
 			boolean killingFriend = false;
-			RobotInfo[] allies = rc.senseNearbyRobots(-1, us);
 			for (RobotInfo ally : allies)
 			{
 				if (willHitRobot(ally, shotDirection, here) && ally.getLocation().distanceTo(here) < enemy.getLocation().distanceTo(here))
