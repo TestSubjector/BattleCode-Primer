@@ -15,7 +15,8 @@ public class ArchonBot extends Globals
 			{
 				tryHiringGardener(gardeners);
 			}
-			BodyInfo[][] array = {enemies, allies, neutralTrees, enemyTrees};
+			TreeInfo[] allyTrees = rc.senseNearbyTrees(-1, us);
+			BodyInfo[][] array = {enemies, allies, neutralTrees, enemyTrees, allyTrees};
 			Direction awayFromNearestObstacle = findDirectionAwayFromNearestObstacle(array);		
 			if (awayFromNearestObstacle != null)
 			{
