@@ -148,7 +148,7 @@ public class GardenerBot extends Globals
 	{
 		updateRobotCount();
 		int gardeners = robotCount[myType.ordinal()];
-		if (gardeners % 2 == 1)
+		if (gardeners > 2 && gardeners % 2 == 1)
 		{
 			return true;
 		}

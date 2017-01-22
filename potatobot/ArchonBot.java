@@ -15,24 +15,16 @@ public class ArchonBot extends Globals
 			{
 				tryHiringGardener(gardeners);
 			}
-			Direction awayFromOtherArchon = null;
-			for (RobotInfo ally : allies)
+			BodyInfo[][] array = {enemies, allies, neutralTrees, enemyTrees};
+			Direction awayFromNearestObstacle = findDirectionAwayFromNearestObstacle(array);		
+			if (awayFromNearestObstacle != null)
 			{
-				if (ally.getType() == RobotType.ARCHON);
-				{
-					awayFromOtherArchon = ally.getLocation().directionTo(here);
-					break;
-				}
+				movingDirection = awayFromNearestObstacle;
 			}
-			if (awayFromOtherArchon != null)
+			if (!tryToMove(movingDirection))
 			{
-				movingDirection = awayFromOtherArchon;
-			}
-			int tries = 0;
-			while (!tryToMove(movingDirection) && tries < 100)
-			{
+				float angle = ((float)Math.random() * 45f + 80f);
 				double choice = Math.random();
-				float angle = ((float)Math.random() * 45f + 135f);
 				if (choice > 0.5)
 				{
 					movingDirection = movingDirection.rotateLeftDegrees(angle);
@@ -41,12 +33,57 @@ public class ArchonBot extends Globals
 				{
 					movingDirection = movingDirection.rotateRightDegrees(angle);
 				}
-				tries++;
 			}
 			footer();
 		}
 	}
 	
+	public static Direction findDirectionAwayFromNearestObstacle(BodyInfo array[][])throws GameActionException 
+	{
+		float minDist = 100000f;
+		Direction awayFromNearestObstacle = null;
+		for (int i = 0; i < array.length; i++)
+		{
+			int arrayLength = array[i].length;
+			if (arrayLength != 0)
+			{
+				if (array[i][0].isRobot())
+				{
+					array[i][0] = (RobotInfo)array[i][0];
+				}
+				else
+				{
+					array[i][0] = (TreeInfo)array[i][0];
+				}
+				MapLocation bodyLocation = array[i][0].getLocation();
+				float bodyDistance = bodyLocation.distanceTo(here);
+				if (bodyDistance < minDist)
+				{
+					awayFromNearestObstacle = bodyLocation.directionTo(here);
+					minDist = bodyDistance;
+				}
+			}
+		}
+		minDist = Math.min(minDist, myType.sensorRadius - 0.1f);
+		float angle = 0;
+		Direction initialDirection = Direction.getEast();
+		while (angle < 360)
+		{
+			Direction sensorDirection = initialDirection.rotateLeftDegrees(angle);
+			while (!rc.onTheMap(here.add(sensorDirection, minDist)))
+			{
+				minDist = Math.max(minDist - 0.5f, 2.0f);
+				if (minDist <= 2.01f)
+				{
+					return sensorDirection.opposite();
+				}
+				awayFromNearestObstacle = sensorDirection.opposite();
+			}
+			angle += 4;
+		}
+		return awayFromNearestObstacle;
+	}
+
 	public static void tryHiringGardener(int gardeners)throws GameActionException
 	{
 		int tries = 0;

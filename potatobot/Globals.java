@@ -1,5 +1,4 @@
 package potatobot;
-import java.util.ArrayList;
 import battlecode.common.*;
 
 public class Globals 
@@ -29,22 +28,16 @@ public class Globals
 	public static boolean haveTarget;
 	public static int lumberjackTarget;
 	public static MapLocation lumberjackTargetLocation;
-	public static ArrayList<Integer> beenHere;
 	public static int[] tryAngles;
+	
+	// Broadcast Channels
 	public static int TREE_CHANNEL = 64;
 	public static int BUILD_CHANNEL = 42;
 	public static int VICTORY_CHANNEL = 69;
+	
 	public static int numberOfArchons;
-	public static int[] ENEMY_ARCHON_CHANNELS = {43,
-			44,
-			45,
-			46,
-			47,
-			48,
-			49,
-			50,
-			51
-			};
+	public static int[] ENEMY_ARCHONS_CHANNELS;
+	
 	/* The Enemy Archon channels represent:
 	 * 43 = Number of Enemy Archons detected till now
 	 * 44 = ID of 1st detected Enemy Archon
@@ -56,32 +49,8 @@ public class Globals
 	 * 50 = Index (from 1 to 3) of the currently targeted Enemy Archon
 	 * 51 = Round Number of the most recent encounter with an Enemy Archon
 	 */
-	public static int[] FARM_LOCATIONS_CHANNELS = {666,
-			667, 
-			668, 
-			669, 
-			670, 
-			671, 
-			672, 
-			673, 
-			674, 
-			675, 
-			676, 
-			677, 
-			678, 
-			679, 
-			680, 
-			681, 
-			682, 
-			683, 
-			684, 
-			685, 
-			686, 
-			687, 
-			688, 
-			689, 
-			690
-			};
+	
+	public static int[] FARM_LOCATIONS_CHANNELS;
 	/* The farm Locations channels represent:
 	 * 666 = Number of farms till now
 	 * 667 - 690 = (hashed) location of the nth farm centre
@@ -90,8 +59,9 @@ public class Globals
 	public static int[] IMPORTANT_TREES_CHANNELS;
 	/* The important trees channels represent:
 	 * 101 = Number of important trees found till now
-	 * 102 - 301 = (hashed) location of the nth farm centre
+	 * {102, 103} - {500, 501} = {ID of nth detected important tree, (hashed) location of the nth detected tree}
 	 */
+	// End Broadcast Channels
 	
 	public static final int hasher = 100000;
 	
@@ -113,9 +83,7 @@ public class Globals
 		movingDirection = randomDirection();
 		numberOfArchons = theirInitialArchons.length;
 		theirInitialArchonCentre = theirInitialArchons[0];
-		beenHere = new ArrayList<Integer>(10);
-		int n = theirInitialArchons.length;
-		for (int i = 1; i < n; i++)
+		for (int i = 1; i < theirInitialArchons.length; i++)
 		{
 			theirInitialArchonCentre = new MapLocation(
 					theirInitialArchonCentre.x + theirInitialArchons[i].x,
@@ -123,11 +91,9 @@ public class Globals
 					);
 		}
 		theirInitialArchonCentre = new MapLocation(
-				theirInitialArchonCentre.x / n,
-				theirInitialArchonCentre.y / n
+				theirInitialArchonCentre.x / theirInitialArchons.length,
+				theirInitialArchonCentre.y / theirInitialArchons.length
 				);
-		robotCount = new int[6];
-		initRobotCountMax();
 		treesPlanted = 0;
 		haveTarget = false;
 		lumberjackTarget = -1;
@@ -144,11 +110,9 @@ public class Globals
 				tryAngles[i] = -((i + 1) / 2);
 			}
 		}
-		IMPORTANT_TREES_CHANNELS = new int[201];
-		for (int i = 101; i <= 301; i++)
-		{
-			IMPORTANT_TREES_CHANNELS[i - 101] = i;
-		}
+		robotCount = new int[6];
+		initRobotCountMax();
+		initChannels();
 	}
 	
 	public static void initRobotCountMax()
@@ -162,6 +126,24 @@ public class Globals
 		robotCountMax[RobotType.TANK.ordinal()] = 7;
 	}
 	
+	public static void initChannels()
+	{
+		ENEMY_ARCHONS_CHANNELS = new int[9];
+		for (int i = 43; i <= 51; i++)
+		{
+			ENEMY_ARCHONS_CHANNELS[i - 43] = i;
+		}
+		FARM_LOCATIONS_CHANNELS = new int[35];
+		for (int i = 666; i <= 690; i++)
+		{
+			FARM_LOCATIONS_CHANNELS[i - 666] = i;
+		}
+		IMPORTANT_TREES_CHANNELS = new int[401];
+		for (int i = 101; i <= 501; i++)
+		{
+			IMPORTANT_TREES_CHANNELS[i - 101] = i;
+		}
+	}
 	// Initialization functions end here
 	
 	
@@ -202,7 +184,7 @@ public class Globals
 	public static boolean dying()throws GameActionException
 	{
 		float health = rc.getHealth();
-		if (health < 5 && prevHealth >= 5)
+		if (health < 7 && prevHealth >= 7)
 		{
 			return true;
 		}
@@ -259,18 +241,45 @@ public class Globals
 		sensedBullets = rc.senseNearbyBullets();
 	}
 	
+	public static void updateNearbyObjects()throws GameActionException
+	{
+		allies = rc.senseNearbyRobots(-1, us);
+		enemies = rc.senseNearbyRobots(-1, them);
+		neutralTrees = rc.senseNearbyTrees(-1, Team.NEUTRAL);
+		enemyTrees = rc.senseNearbyTrees(-1, them);
+	}
+	
+	public static void doVictoryPointsCalculations()throws GameActionException
+	{
+		victoryPoints = rc.getTeamVictoryPoints();
+		boolean weHaveWon = (rc.readBroadcast(VICTORY_CHANNEL) == 1);
+		float gameProgressPercentage = (rc.getRoundNum() / 3000f);
+		// float enemyVictoryProgress = ((float)rc.getOpponentVictoryPoints() / 1000f);
+		if (!weHaveWon && victoryPoints + victoryPointsPurchasableWithBullets(bullets) >= 1001)
+		{
+			rc.donate(bullets - bulletsRequiredToBuyVictoryPoints(1));
+			rc.broadcast(VICTORY_CHANNEL, 1);
+		}
+		else if (bullets > (150f / gameProgressPercentage))
+		{
+			float bulletsToSpend =  gameProgressPercentage * bullets;
+			int vp = victoryPointsPurchasableWithBullets(bulletsToSpend);
+			rc.donate(bulletsRequiredToBuyVictoryPoints(vp) + 0.01f);
+		}
+	}
+	
 	private static void updateEnemyArchons()throws GameActionException 
 	{
-		int numberOfArchonsFound = rc.readBroadcast(ENEMY_ARCHON_CHANNELS[0]);
+		int numberOfArchonsFound = rc.readBroadcast(ENEMY_ARCHONS_CHANNELS[0]);
 		for (RobotInfo enemy : enemies)
 		{
 			if (enemy.getType() == RobotType.ARCHON)
 			{
-				rc.broadcast(ENEMY_ARCHON_CHANNELS[8], rc.getRoundNum());
+				rc.broadcast(ENEMY_ARCHONS_CHANNELS[8], rc.getRoundNum());
 				boolean found = false; // initial value
 				for (int i = 1; i < numberOfArchonsFound * 2; i += 2)
 				{
-					int ID = rc.readBroadcast(ENEMY_ARCHON_CHANNELS[i]);
+					int ID = rc.readBroadcast(ENEMY_ARCHONS_CHANNELS[i]);
 					if (enemy.getID() == ID)
 					{
 						// already seen this Archon
@@ -281,10 +290,10 @@ public class Globals
 				if (!found)
 				{
 					int hashedLocation = hashIt(enemy.getLocation());
-					rc.broadcast(ENEMY_ARCHON_CHANNELS[numberOfArchonsFound * 2 + 1], enemy.getID());
-					rc.broadcast(ENEMY_ARCHON_CHANNELS[numberOfArchonsFound * 2 + 2], hashedLocation);
+					rc.broadcast(ENEMY_ARCHONS_CHANNELS[numberOfArchonsFound * 2 + 1], enemy.getID());
+					rc.broadcast(ENEMY_ARCHONS_CHANNELS[numberOfArchonsFound * 2 + 2], hashedLocation);
 					numberOfArchonsFound++;
-					rc.broadcast(ENEMY_ARCHON_CHANNELS[0], numberOfArchonsFound);
+					rc.broadcast(ENEMY_ARCHONS_CHANNELS[0], numberOfArchonsFound);
 				}
 			}
 		}
@@ -292,13 +301,13 @@ public class Globals
 		int minIndex = 0;
 		for (int i = 1; i < numberOfArchonsFound * 2; i += 2)
 		{
-			int ID = rc.readBroadcast(ENEMY_ARCHON_CHANNELS[i]);
+			int ID = rc.readBroadcast(ENEMY_ARCHONS_CHANNELS[i]);
 			if (rc.canSenseRobot(ID))
 			{
 				RobotInfo sensedRobot = rc.senseRobot(ID);
 				int hashedLocation = hashIt(sensedRobot.getLocation());
 				float healthRemaining = rc.getHealth();
-				rc.broadcast(ENEMY_ARCHON_CHANNELS[i + 1], hashedLocation);
+				rc.broadcast(ENEMY_ARCHONS_CHANNELS[i + 1], hashedLocation);
 				if (healthRemaining < minHealth)
 				{
 					minHealth = healthRemaining;
@@ -307,10 +316,10 @@ public class Globals
 			}
 			if (minIndex != 0)
 			{
-				rc.broadcast(ENEMY_ARCHON_CHANNELS[7], minIndex);
+				rc.broadcast(ENEMY_ARCHONS_CHANNELS[7], minIndex);
 			}
 		}
-		haveTarget = ((rc.readBroadcast(ENEMY_ARCHON_CHANNELS[7]) > 0) && ((rc.getRoundNum() - rc.readBroadcast(ENEMY_ARCHON_CHANNELS[8])) < 10));
+		haveTarget = ((rc.readBroadcast(ENEMY_ARCHONS_CHANNELS[7]) > 0) && ((rc.getRoundNum() - rc.readBroadcast(ENEMY_ARCHONS_CHANNELS[8])) < 10));
 	}
 	
 	public static void updateTrees()throws GameActionException
@@ -327,7 +336,7 @@ public class Globals
 			if (tree.getContainedRobot() != null)
 			{
 				int numberOfTreesFound = rc.readBroadcast(IMPORTANT_TREES_CHANNELS[0]);
-				if (numberOfTreesFound < 100)
+				if (numberOfTreesFound < 200)
 				{
 					boolean found = false; // initial value
 					for (int i = 1; i < numberOfTreesFound * 2; i += 2)
@@ -497,7 +506,7 @@ public class Globals
 		float distanceToCentre = shotFrom.distanceTo(robot.getLocation());
 		Direction robotDirection = shotFrom.directionTo(robot.getLocation());
 		float robotRadius = robot.getRadius();
-		float tan = (float)Math.abs(Math.tan(shotDirection.radiansBetween(robotDirection)));
+		float tan = (float)Math.tan(Math.abs(shotDirection.radiansBetween(robotDirection)) - 0.01);
 		float distanceFromCentre = (float) (distanceToCentre * tan);
 		if (distanceFromCentre < robotRadius)
 		{
@@ -562,25 +571,9 @@ public class Globals
 	public static void header()throws GameActionException
 	{
 		updateBulletCount();
-		victoryPoints = rc.getTeamVictoryPoints();
-		boolean weHaveWon = (rc.readBroadcast(VICTORY_CHANNEL) == 1);
-		float gameProgressPercentage = (rc.getRoundNum() / 3000f);
-		if (!weHaveWon && victoryPoints + victoryPointsPurchasableWithBullets(bullets) >= 1001)
-		{
-			rc.donate(bullets - bulletsRequiredToBuyVictoryPoints(1));
-			rc.broadcast(VICTORY_CHANNEL, 1);
-		}
-		else if (bullets > (150f / gameProgressPercentage))
-		{
-			float bulletsToSpend =  gameProgressPercentage * bullets;
-			int vp = victoryPointsPurchasableWithBullets(bulletsToSpend);
-			rc.donate(bulletsRequiredToBuyVictoryPoints(vp));
-		}
+		doVictoryPointsCalculations();
 		updateRobotCount();
-		allies = rc.senseNearbyRobots(-1, us);
-		enemies = rc.senseNearbyRobots(-1, them);
-		neutralTrees = rc.senseNearbyTrees(-1, Team.NEUTRAL);
-		enemyTrees = rc.senseNearbyTrees(-1, them);
+		updateNearbyObjects();
 		if (dying())
 		{
 			imDying();
