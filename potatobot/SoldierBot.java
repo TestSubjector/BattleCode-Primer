@@ -8,6 +8,7 @@ public class SoldierBot extends Globals
 		while (true)
 		{
 			header();
+			wander();
 			for (RobotInfo enemy : enemies)
 			{
 				if (here.distanceTo(enemy.getLocation()) <= 3 || enemies.length > 4)
@@ -32,7 +33,6 @@ public class SoldierBot extends Globals
 					}
 				}
 			}
-			wander();
 			footer();
 		}
 	}

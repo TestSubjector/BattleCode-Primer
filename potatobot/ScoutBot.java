@@ -19,13 +19,6 @@ public class ScoutBot extends Globals
 					break;
 				}
 			}
-			for (RobotInfo enemy : enemies)
-			{
-				if (trySingleShot(enemy))
-				{
-					break;
-				}
-			}
 			if (gonnaGetBullets)
 			{
 				tryToMove(movingDirection);
@@ -44,6 +37,13 @@ public class ScoutBot extends Globals
 			else 
 			{
 				wander();
+			}
+			for (RobotInfo enemy : enemies)
+			{
+				if (trySingleShot(enemy))
+				{
+					break;
+				}
 			}
 			footer();
 		}
