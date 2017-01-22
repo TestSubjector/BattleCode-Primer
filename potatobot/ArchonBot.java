@@ -57,7 +57,7 @@ public class ArchonBot extends Globals
 					array[i][0] = (TreeInfo)array[i][0];
 				}
 				MapLocation bodyLocation = array[i][0].getLocation();
-				float bodyDistance = bodyLocation.distanceTo(here);
+				float bodyDistance = bodyLocation.distanceTo(here) - array[i][0].getRadius();
 				if (bodyDistance < minDist)
 				{
 					awayFromNearestObstacle = bodyLocation.directionTo(here);
