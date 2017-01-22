@@ -7,7 +7,7 @@ public class RobotPlayer extends Globals
 	{
 		Globals.init(rcinit);
 		Globals.updateLocation();
-		switch (rc.getType()) 
+		switch (myType) 
 		{
 		    case ARCHON:
 				ArchonBot.loop();

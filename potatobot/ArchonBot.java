@@ -28,14 +28,20 @@ public class ArchonBot extends Globals
 			{
 				movingDirection = awayFromOtherArchon;
 			}
-			while (!tryToMove(movingDirection) && Clock.getBytecodesLeft() > 1000)
+			int tries = 0;
+			while (!tryToMove(movingDirection) && tries < 100)
 			{
-				Direction newDirection = randomDirection();
-				while (Math.abs(newDirection.degreesBetween(movingDirection)) > 100)
+				double choice = Math.random();
+				float angle = ((float)Math.random() * 45f + 135f);
+				if (choice > 0.5)
 				{
-					newDirection = randomDirection();
+					movingDirection = movingDirection.rotateLeftDegrees(angle);
 				}
-				movingDirection = newDirection;
+				else
+				{
+					movingDirection = movingDirection.rotateRightDegrees(angle);
+				}
+				tries++;
 			}
 			footer();
 		}
@@ -44,13 +50,17 @@ public class ArchonBot extends Globals
 	public static void tryHiringGardener(int gardeners)throws GameActionException
 	{
 		int tries = 0;
-		while (tries < 15)
+		Direction hireDirection = randomDirection();
+		while (tries < 45)
 		{
-			Direction randomDir = randomDirection();
-			if (rc.canHireGardener(randomDir))
+			if (rc.canHireGardener(hireDirection))
 			{
-				rc.hireGardener(randomDir);
+				rc.hireGardener(hireDirection);
 				break;
+			}
+			else
+			{
+				hireDirection.rotateLeftDegrees(8);
 			}
 			tries++;
 		}

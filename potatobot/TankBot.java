@@ -22,7 +22,27 @@ public class TankBot extends Globals
 			}
 			for (RobotInfo enemy : enemies)
 			{
-				trySingleShot(enemy);
+				if (here.distanceTo(enemy.getLocation()) <= 4 || enemies.length > 4)
+				{
+					if (tryPentadShot(enemy))
+					{
+						break;
+					}
+				}
+				else if (here.distanceTo(enemy.getLocation()) <= 6)
+				{
+					if (tryTriadShot(enemy))
+					{
+						break;
+					}
+				}
+				else
+				{
+					if (trySingleShot(enemy))
+					{
+						break;
+					}
+				}
 			}
 			footer();
 		}

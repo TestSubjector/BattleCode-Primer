@@ -9,7 +9,28 @@ public class ScoutBot extends Globals
 		while (true)
 		{
 			header();
-			if (haveTarget)
+			boolean gonnaGetBullets = false;
+			for (TreeInfo tree : neutralTrees)
+			{
+				if (tree.getContainedBullets() > 0)
+				{
+					movingDirection = here.directionTo(tree.getLocation());
+					gonnaGetBullets = true;
+					break;
+				}
+			}
+			for (RobotInfo enemy : enemies)
+			{
+				if (trySingleShot(enemy))
+				{
+					break;
+				}
+			}
+			if (gonnaGetBullets)
+			{
+				tryToMove(movingDirection);
+			}
+			else if (haveTarget)
 			{
 				int targetArchonLocationIndex = rc.readBroadcast(ENEMY_ARCHON_CHANNELS[7]) * 2;
 				int hashedTargetLocation = rc.readBroadcast(ENEMY_ARCHON_CHANNELS[targetArchonLocationIndex]);
@@ -20,9 +41,9 @@ public class ScoutBot extends Globals
 			{
 				movingDirection = randomDirection();
 			}
-			for (RobotInfo enemy : enemies)
+			else 
 			{
-				trySingleShot(enemy);
+				wander();
 			}
 			footer();
 		}

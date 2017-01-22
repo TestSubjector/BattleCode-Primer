@@ -5,25 +5,34 @@ public class SoldierBot extends Globals
 {
 	public static void loop()throws GameActionException
 	{
-		movingDirection = here.directionTo(theirInitialArchons[0]);
 		while (true)
 		{
 			header();
-			if (haveTarget)
-			{
-				int targetArchonLocationIndex = rc.readBroadcast(ENEMY_ARCHON_CHANNELS[7]) * 2;
-				int hashedTargetLocation = rc.readBroadcast(ENEMY_ARCHON_CHANNELS[targetArchonLocationIndex]);
-				MapLocation targetLocation = unhashIt(hashedTargetLocation);
-				tryToMoveTowards(targetLocation);
-			}
-			else if (!tryToMove(movingDirection))
-			{
-				movingDirection = randomDirection();
-			}
 			for (RobotInfo enemy : enemies)
 			{
-				trySingleShot(enemy);
+				if (here.distanceTo(enemy.getLocation()) <= 3 || enemies.length > 4)
+				{
+					if (tryPentadShot(enemy))
+					{
+						break;
+					}
+				}
+				else if (here.distanceTo(enemy.getLocation()) <= 5)
+				{
+					if (tryTriadShot(enemy))
+					{
+						break;
+					}
+				}
+				else
+				{
+					if (trySingleShot(enemy))
+					{
+						break;
+					}
+				}
 			}
+			wander();
 			footer();
 		}
 	}
