@@ -1,5 +1,6 @@
 package potatobot;
 import battlecode.common.*;
+import java.util.HashMap;
 
 public class Globals 
 {
@@ -29,6 +30,8 @@ public class Globals
 	public static int lumberjackTarget;
 	public static MapLocation lumberjackTargetLocation;
 	public static int[] tryAngles;
+	public static HashMap<Integer, Integer> seenEnemyGardeners;
+	public static HashMap<Integer, Integer> seenEnemyArchons;
 	
 	// Broadcast Channels
 	public static int TREE_CHANNEL = 64;
@@ -36,10 +39,11 @@ public class Globals
 	public static int VICTORY_CHANNEL = 69;
 	
 	public static int numberOfArchons;
+	// public static Map<Integer> seenEnemyArchons;
 	public static int[] ENEMY_ARCHONS_CHANNELS;
 	
-	/* The Enemy Archon channels represent:
-	 * 43 = Number of Enemy Archons detected till now
+	/* The enemy archon channels represent:
+	 * 43 = Number of Enemy Archons seen
 	 * 44 = ID of 1st detected Enemy Archon
 	 * 45 = Last known (hashed) location of the 1st detected Enemy Archon
 	 * 46 = ID of the 2nd detected Enemy Archon
@@ -49,17 +53,24 @@ public class Globals
 	 * 50 = Index (from 1 to 3) of the currently targeted Enemy Archon
 	 * 51 = Round Number of the most recent encounter with an Enemy Archon
 	 */
+
+	public static int[] ENEMY_GARDENERS_CHANNELS;
+	/* The gardener locations channels represent:
+	 * 700 = Number of enemy gardeners seen
+	 * {701, 702} - {899, 900} = {ID of nth detected enemy gardener, (hashed) location of the nth detected enemy gardener}
+	 * 901 = Round Number of the most recent encounter with an Enemy Gardener
+	 */
 	
 	public static int[] FARM_LOCATIONS_CHANNELS;
-	/* The farm Locations channels represent:
-	 * 666 = Number of farms till now
+	/* The farm locations channels represent:
+	 * 666 = Number of farms seen
 	 * 667 - 690 = (hashed) location of the nth farm centre
 	 */
 	
 	public static int[] IMPORTANT_TREES_CHANNELS;
 	/* The important trees channels represent:
-	 * 101 = Number of important trees found till now
-	 * {102, 103} - {500, 501} = {ID of nth detected important tree, (hashed) location of the nth detected tree}
+	 * 100 = Number of important trees seen
+	 * {101, 102} - {499, 500} = {ID of nth detected important tree, (hashed) location of the nth detected tree}
 	 */
 	// End Broadcast Channels
 	
@@ -110,13 +121,15 @@ public class Globals
 				tryAngles[i] = -((i + 1) / 2);
 			}
 		}
-		robotCount = new int[6];
+		seenEnemyGardeners = new HashMap<Integer, Integer>();
+		seenEnemyArchons = new HashMap<Integer, Integer>();
 		initRobotCountMax();
 		initChannels();
 	}
 	
 	public static void initRobotCountMax()
 	{
+		robotCount = new int[6];
 		robotCountMax = new int[6];
 		robotCountMax[RobotType.ARCHON.ordinal()] = 3;
 		robotCountMax[RobotType.GARDENER.ordinal()] = 21;
@@ -128,6 +141,11 @@ public class Globals
 	
 	public static void initChannels()
 	{
+		ENEMY_GARDENERS_CHANNELS = new int[202];
+		for (int i = 700; i <= 901; i++)
+		{
+			ENEMY_GARDENERS_CHANNELS[i - 700] = i;
+		}
 		ENEMY_ARCHONS_CHANNELS = new int[9];
 		for (int i = 43; i <= 51; i++)
 		{
@@ -139,9 +157,9 @@ public class Globals
 			FARM_LOCATIONS_CHANNELS[i - 666] = i;
 		}
 		IMPORTANT_TREES_CHANNELS = new int[401];
-		for (int i = 101; i <= 501; i++)
+		for (int i = 100; i <= 500; i++)
 		{
-			IMPORTANT_TREES_CHANNELS[i - 101] = i;
+			IMPORTANT_TREES_CHANNELS[i - 100] = i;
 		}
 	}
 	// Initialization functions end here
@@ -268,10 +286,63 @@ public class Globals
 		}
 	}
 	
-	private static void updateEnemyArchons()throws GameActionException 
+	private static void updateEnemies()throws GameActionException 
 	{
-		int numberOfArchonsFound = rc.readBroadcast(ENEMY_ARCHONS_CHANNELS[0]);
+		int enemyGardeners = rc.readBroadcast(ENEMY_GARDENERS_CHANNELS[0]);
+		int enemyArchons = rc.readBroadcast(ENEMY_ARCHONS_CHANNELS[0]);
+		for (int i = 1; i < enemyGardeners * 2; i += 2)
+		{
+			int ID = rc.readBroadcast(ENEMY_GARDENERS_CHANNELS[i]);
+			if (!seenEnemyGardeners.containsKey(ID))
+			{
+				seenEnemyGardeners.put(ID, i + 1);
+			}
+		}
+		for (int i = 1; i < enemyArchons * 2; i += 2)
+		{
+			int ID = rc.readBroadcast(ENEMY_ARCHONS_CHANNELS[i]);
+			if (!seenEnemyArchons.containsKey(ID))
+			{
+				seenEnemyArchons.put(ID, i + 1);
+			}
+		}
 		for (RobotInfo enemy : enemies)
+		{
+			int ID = enemy.getID();
+			if (enemy.getType() == RobotType.GARDENER)
+			{
+				rc.broadcast(ENEMY_GARDENERS_CHANNELS[201], rc.getRoundNum());
+				int hashedLocation = hashIt(enemy.getLocation());
+				if (!seenEnemyGardeners.containsKey(ID))
+				{
+					rc.broadcast(ENEMY_GARDENERS_CHANNELS[enemyGardeners * 2 + 1], ID);
+					rc.broadcast(ENEMY_GARDENERS_CHANNELS[enemyGardeners * 2 + 2], hashedLocation);
+					enemyGardeners++;
+					rc.broadcast(ENEMY_GARDENERS_CHANNELS[0], enemyGardeners);
+				}
+				else
+				{
+					rc.broadcast(ENEMY_GARDENERS_CHANNELS[seenEnemyGardeners.get(ID)], hashedLocation);
+				}
+			}
+			else if (enemy.getType() == RobotType.ARCHON)
+			{
+				rc.broadcast(ENEMY_ARCHONS_CHANNELS[8], rc.getRoundNum());
+				int hashedLocation = hashIt(enemy.getLocation());
+				if (!seenEnemyArchons.containsKey(ID))
+				{
+					rc.broadcast(ENEMY_ARCHONS_CHANNELS[enemyArchons * 2 + 1], ID);
+					rc.broadcast(ENEMY_ARCHONS_CHANNELS[enemyArchons * 2 + 2], hashedLocation);
+					enemyArchons++;
+					rc.broadcast(ENEMY_ARCHONS_CHANNELS[0], enemyArchons);
+				}
+				else
+				{
+					rc.broadcast(ENEMY_ARCHONS_CHANNELS[seenEnemyArchons.get(ID)], hashedLocation);
+				}
+			}
+		}
+		/* for (RobotInfo enemy : enemies)
 		{
 			if (enemy.getType() == RobotType.ARCHON)
 			{
@@ -287,6 +358,19 @@ public class Globals
 						break;
 					}
 				}
+				else if (enemy.getType() == RobotType.GARDENER)
+				{
+					rc.broadcast(ENEMY_GARDENERS_CHANNELS[202], rc.getRoundNum());
+					for (int i = previousEnemyGardeners * 2; i < enemyGardeners * 2; i += 2)
+					{
+						int ID = rc.readBroadcast(ENEMY_ARCHONS_CHANNELS[i]);
+						if (enemy.getID() == ID)
+						{
+							// already seen this Archon
+							found = true; 
+							break;
+						}
+					}
 				if (!found)
 				{
 					int hashedLocation = hashIt(enemy.getLocation());
@@ -320,6 +404,7 @@ public class Globals
 			}
 		}
 		haveTarget = ((rc.readBroadcast(ENEMY_ARCHONS_CHANNELS[7]) > 0) && ((rc.getRoundNum() - rc.readBroadcast(ENEMY_ARCHONS_CHANNELS[8])) < 10));
+		*/
 	}
 	
 	public static void updateTrees()throws GameActionException
@@ -580,7 +665,7 @@ public class Globals
 		}
 		updateNearbyBullets();
 		tryToDodge();
-		updateEnemyArchons();
+		updateEnemies();
 		updateTrees();
 	}
 
