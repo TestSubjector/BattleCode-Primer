@@ -40,9 +40,12 @@ public class Globals
 	public static int[] tryAngles;
 	public static HashMap<Integer, Integer> seenEnemyGardeners;
 	public static HashMap<Integer, Integer> seenEnemyArchons;
+	public static HashMap<Integer, Integer> seenImportantTrees;
 	
 	// Broadcast Channels
 	public static int TREE_CHANNEL = 64;
+	
+	public static int DEAD_FARMERS_CHANNEL = 66;
 	
 	public static int GARDENER_NUMBER_CHANNEL = 67;
 	
@@ -113,6 +116,7 @@ public class Globals
 		initTryAngles();
 		seenEnemyGardeners = new HashMap<Integer, Integer>();
 		seenEnemyArchons = new HashMap<Integer, Integer>();
+		seenImportantTrees = new HashMap<Integer, Integer>();
 		initChannels();
 	}
 
@@ -243,6 +247,8 @@ public class Globals
 		{
 			robotsOfMyType = robotCount[farmerIndex];
 			rc.broadcast(farmerIndex, robotsOfMyType - 1);
+			int deadFarmers = rc.readBroadcast(DEAD_FARMERS_CHANNEL);
+			rc.broadcast(DEAD_FARMERS_CHANNEL, deadFarmers + 1);
 		}
 	}
 	
@@ -258,7 +264,8 @@ public class Globals
 
 	private static void updateNonAllyTreeDensity()
 	{
-		nonAllyTreeDensity = (nonAllyTreeArea / myType.sensorRadius);
+		float sightArea = (float)Math.PI * myType.sensorRadius * myType.sensorRadius;
+		nonAllyTreeDensity = (nonAllyTreeArea / sightArea);
 	}
 	
 	public static void updateRobotCount()throws GameActionException
@@ -390,25 +397,6 @@ public class Globals
 				}
 			}
 		}
-		for (int i = 2; i <= enemyGardeners * 2; i += 2)
-		{
-			int hashedLocation = rc.readBroadcast(ENEMY_GARDENERS_CHANNELS[i]);
-			if (hashedLocation == -1)
-			{
-				continue;
-			}
-		}
-		for (int i = 2; i <= enemyArchons * 2; i += 2)
-		{
-			int hashedLocation = rc.readBroadcast(ENEMY_ARCHONS_CHANNELS[i]);
-			if (hashedLocation == -1)
-			{
-				continue;
-			}
-		}
-		/*
-		haveTarget = ((rc.readBroadcast(ENEMY_ARCHONS_CHANNELS[7]) > 0) && ((roundNum - rc.readBroadcast(ENEMY_ARCHONS_CHANNELS[8])) < 10));
-		*/
 	}
 	
 	public static void updateTrees()throws GameActionException
@@ -418,6 +406,8 @@ public class Globals
 			float r = tree.getRadius();
 			float area = (float)Math.PI * r * r;
 			nonAllyTreeArea += area;
+			MapLocation treeLocation = tree.getLocation();
+			int treeID = tree.getID();
 			if (tree.getContainedBullets() > 0)
 			{
 				if (rc.canShake(tree.getID()))
@@ -430,38 +420,34 @@ public class Globals
 				int numberOfTreesFound = rc.readBroadcast(IMPORTANT_TREES_CHANNELS[0]);
 				if (numberOfTreesFound < 200)
 				{
-					boolean found = false; // initial value
-					for (int i = 1; i < numberOfTreesFound * 2; i += 2)
+					if (!seenImportantTrees.containsKey(treeID))
 					{
-						int ID = rc.readBroadcast(IMPORTANT_TREES_CHANNELS[i]);
-						if (myType == RobotType.LUMBERJACK)
-						{
-							MapLocation unhashedLocation = unhashIt(rc.readBroadcast(IMPORTANT_TREES_CHANNELS[i + 1]));
-							if (lumberjackTarget == -1 || unhashedLocation.distanceTo(here) < lumberjackTargetLocation.distanceTo(here))
-							{
-								// this is the first target, or a closer one
-								lumberjackTarget = ID;
-								lumberjackTargetLocation = unhashedLocation;
-							}
-						}
-						if (tree.getID() == ID)
-						{
-							// already seen this tree
-							found = true; 
-							break;
-						}
-					}
-					if (!found)
-					{
-						int hashedLocation = hashIt(tree.getLocation());
-						rc.broadcast(IMPORTANT_TREES_CHANNELS[numberOfTreesFound * 2 + 1], tree.getID());
+						int hashedLocation = hashIt(treeLocation);
+						rc.broadcast(IMPORTANT_TREES_CHANNELS[numberOfTreesFound * 2 + 1], treeID);
 						rc.broadcast(IMPORTANT_TREES_CHANNELS[numberOfTreesFound * 2 + 2], hashedLocation);
-						numberOfTreesFound++;
-						rc.broadcast(IMPORTANT_TREES_CHANNELS[0], numberOfTreesFound);
+						rc.broadcast(IMPORTANT_TREES_CHANNELS[0], numberOfTreesFound + 1);
+						seenImportantTrees.put(treeID, numberOfTreesFound + 1);
 					}
 				}
 			}
 		}
+		int numberOfTreesFound = rc.readBroadcast(IMPORTANT_TREES_CHANNELS[0]);
+		for (int i = 1; i < numberOfTreesFound * 2; i += 2)
+		{
+			int ID = rc.readBroadcast(IMPORTANT_TREES_CHANNELS[i]);
+			int hashedLocation = rc.readBroadcast(IMPORTANT_TREES_CHANNELS[i + 1]);
+			MapLocation unhashedLocation = unhashIt(hashedLocation);
+			if (myType == RobotType.LUMBERJACK && (lumberjackTarget == -1 || here.distanceTo(unhashedLocation) < here.distanceTo(lumberjackTargetLocation)))
+			{
+				lumberjackTarget = ID;
+				lumberjackTargetLocation = unhashedLocation;
+			}
+			if (rc.canSenseLocation(unhashedLocation) && !rc.canSenseTree(ID))
+			{
+				rc.broadcast(IMPORTANT_TREES_CHANNELS[i + 1], -1);
+			}
+		}
+
 		for (TreeInfo tree : enemyTrees)
 		{
 			float r = tree.getRadius();
@@ -582,7 +568,7 @@ public class Globals
 		{
 			Direction bulletDirection = sensedBullet.getDir();
 			MapLocation bulletLocation = sensedBullet.getLocation();
-			rc.setIndicatorLine(bulletLocation, bulletLocation.add(bulletDirection, 2.5f), 0, 0, 255);
+			// rc.setIndicatorLine(bulletLocation, bulletLocation.add(bulletDirection, 2.5f), 0, 0, 255);
 			if (willHitRobot(me, bulletDirection, bulletLocation) && (sensedBullet.getSpeed()) >= (bulletLocation.distanceTo(here) - myType.bodyRadius))
 			{
 				if (sideStep(bulletDirection))
@@ -685,12 +671,12 @@ public class Globals
 	
 	public static boolean tryTriadShot(RobotInfo enemy)throws GameActionException
 	{
-		Direction[] shotDirections = new Direction[]{null,here.directionTo(enemy.getLocation()),null}; //left,centre,right
+		Direction[] shotDirections = {null,here.directionTo(enemy.getLocation()),null}; //left,centre,right
 		shotDirections[0] = shotDirections[1].rotateLeftDegrees(GameConstants.TRIAD_SPREAD_DEGREES);
 		shotDirections[2] = shotDirections[1].rotateRightDegrees(GameConstants.TRIAD_SPREAD_DEGREES);
 		
-		RobotInfo[] RobotHit = new RobotInfo[]{null,enemy,null}; // left,centre,right
-		boolean[] friendHit = new boolean[]{false,false,false}; // left,centre,right
+		RobotInfo[] RobotHit = {null,enemy,null}; // left,centre,right
+		boolean[] friendHit = {false,false,false}; // left,centre,right
 		
 		if (rc.canFireTriadShot())
 		{
@@ -717,11 +703,11 @@ public class Globals
 					//hitting ally not enemy
 					friendHit[1]=true;
 				}
-				if(willHitRobot(ally,shotDirections[0],here) && ally.getLocation().distanceTo(here) < RobotHit[0].getLocation().distanceTo(here)){
+				if(willHitRobot(ally,shotDirections[0],here) && RobotHit[0] != null && ally.getLocation().distanceTo(here) < RobotHit[0].getLocation().distanceTo(here)){
 					//hitting ally not enemy
 					friendHit[0]=true;
 				}
-				if(willHitRobot(ally,shotDirections[2],here) && ally.getLocation().distanceTo(here) < RobotHit[2].getLocation().distanceTo(here)){
+				if(willHitRobot(ally,shotDirections[2],here) && RobotHit[2] != null && ally.getLocation().distanceTo(here) < RobotHit[2].getLocation().distanceTo(here)){
 					//hitting ally not enemy
 					friendHit[2]=true;
 				}
@@ -738,14 +724,14 @@ public class Globals
 	
 	public static boolean tryPentadShot(RobotInfo enemy)throws GameActionException
 	{	// all arrays are leftmost to rightmost. So, [2] is the centreDirection|Bot 
-		Direction[] shotDirections = new Direction[]{null,null,here.directionTo(enemy.getLocation()),null,null};
+		Direction[] shotDirections = {null,null,here.directionTo(enemy.getLocation()),null,null};
 		shotDirections[1] = shotDirections[2].rotateLeftDegrees(GameConstants.PENTAD_SPREAD_DEGREES);
 		shotDirections[0] = shotDirections[1].rotateLeftDegrees(GameConstants.PENTAD_SPREAD_DEGREES);
 		shotDirections[3] = shotDirections[2].rotateRightDegrees(GameConstants.PENTAD_SPREAD_DEGREES);
 		shotDirections[4] = shotDirections[3].rotateRightDegrees(GameConstants.PENTAD_SPREAD_DEGREES);
 		
-		RobotInfo[] RobotHit = new RobotInfo[]{null,null,enemy,null,null};
-		boolean[] friendHit = new boolean[]{false,false,false,false,false};
+		RobotInfo[] RobotHit = {null,null,enemy,null,null};
+		boolean[] friendHit = {false,false,false,false,false};
 		
 		if (rc.canFirePentadShot()){
 			
@@ -759,7 +745,7 @@ public class Globals
 			//Now check for allies in between
 			for(RobotInfo ally:allies){
 				for(int i=0;i<5;i++){
-					if(willHitRobot(ally,shotDirections[i],here) && ally.getLocation().distanceTo(here) < RobotHit[i].getLocation().distanceTo(here)){
+					if(willHitRobot(ally,shotDirections[i],here) && RobotHit[i] != null && ally.getLocation().distanceTo(here) < RobotHit[i].getLocation().distanceTo(here)){
 						friendHit[i] = true;
 					}
 				}

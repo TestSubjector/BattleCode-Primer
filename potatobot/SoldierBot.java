@@ -3,6 +3,7 @@ import battlecode.common.*;
 
 public class SoldierBot extends Globals
 {
+	public static int patience = 30;
 	public static void loop()throws GameActionException
 	{
 		movingDirection = here.directionTo(theirInitialArchons[0]);
@@ -89,13 +90,11 @@ public class SoldierBot extends Globals
 			}
 			
 			// Defend your closest farmer
-			int soldiers = robotCount[RobotType.SOLDIER.ordinal()];
-			int farmers = robotCount[farmerIndex];
+			float closestFarmDistance = 500000;
 			if (soldiers <= farmers)
 			{
 				int allyFarmLocations = rc.readBroadcast(FARM_LOCATIONS_CHANNELS[0]);
 				MapLocation closestFarmLocation = null;
-				float closestFarmDistance = 500000;
 				if (allyFarmLocations > 0)
 				{
 					for (int i = 1; i <= allyFarmLocations; i++)
@@ -120,8 +119,7 @@ public class SoldierBot extends Globals
 				if (closestFarmLocation != null)
 				{
 					Direction toClosestFarm = here.directionTo(closestFarmLocation);
-					float distanceToClosestFarm = here.distanceTo(closestFarmLocation);
-					if (distanceToClosestFarm > 4f)
+					if (closestFarmDistance > 5f)
 					{
 						movingDirection = toClosestFarm;
 					}
@@ -131,11 +129,42 @@ public class SoldierBot extends Globals
 					}
 				}
 			}
-			
 			// movingDirection decided, now tryToMove
-			else if (!tryToMove(movingDirection))
+			if (!tryToMove(movingDirection))
 			{
 				movingDirection = randomDirection();
+				patience--;
+				if (patience == 0)
+				{
+					if (neutralTrees.length != 0)
+					{
+						MapLocation closestTreeLocation = neutralTrees[0].getLocation();
+						Direction shotDirection = here.directionTo(closestTreeLocation);
+						if (rc.canFireSingleShot())
+						{
+							boolean killingFriend = false;
+							for (RobotInfo ally : allies)
+							{
+								if (willHitRobot(ally, shotDirection, here) && ally.getLocation().distanceTo(here) < closestTreeLocation.distanceTo(here))
+								{
+									killingFriend = true;
+									break;
+								}
+							}
+							if (!killingFriend)
+							{
+								if (rc.canFireSingleShot())
+								{
+									rc.fireSingleShot(shotDirection);
+								}
+							}
+						}
+					}
+				}
+			}
+			else
+			{
+				patience = 30;
 			}
 			shootClosestEnemy();
 			
@@ -145,14 +174,14 @@ public class SoldierBot extends Globals
 	
 	public static boolean shootClosestEnemy()throws GameActionException
 	{
-		if (here.distanceTo(enemies[0].getLocation()) <= 4 || (enemies.length > 4 && enemies.length * 3 > allies.length * 2))
+		if (enemies.length != 0 && (here.distanceTo(enemies[0].getLocation()) <= 4 || (enemies.length > 4 && enemies.length * 3 > allies.length * 2)))
 		{
 			if (tryPentadShot(enemies[0]))
 			{
 				return true;
 			}
 		}
-		else if (here.distanceTo(enemies[0].getLocation()) <= 6 || (enemies.length > 3 && enemies.length * 3 > allies.length * 2))
+		else if (enemies.length != 0 && (here.distanceTo(enemies[0].getLocation()) <= 6 || (enemies.length > 3 && enemies.length * 3 > allies.length * 2)))
 		{
 			if (tryTriadShot(enemies[0]))
 			{

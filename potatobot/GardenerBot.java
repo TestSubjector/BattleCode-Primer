@@ -8,6 +8,8 @@ public class GardenerBot extends Globals
 	private static Direction plantDirection = Direction.getNorth();
 	private static int treesIPlanted = 0;
 	private static boolean haveGuard = false;
+	private static boolean amFirstGardener = false;
+	private static RobotType typeToSpawnFirst = RobotType.SCOUT;
 	
 	public static void loop()throws GameActionException
 	{
@@ -16,13 +18,14 @@ public class GardenerBot extends Globals
 		{
 			updateRobotCount();
 			rc.broadcast(farmerIndex, farmers + 1);
-			if (robotCount[farmerIndex] > 0)
+			if (robotCount[farmerIndex] == 0)
 			{
-				getClear();
+				amFirstGardener = true;
+				planningRequired = false;
 			}
 			else
 			{
-				planningRequired = false;
+				getClear();
 			}
 			int farmIndex = rc.readBroadcast(FARM_LOCATIONS_CHANNELS[0]);
 			rc.broadcast(FARM_LOCATIONS_CHANNELS[farmIndex + 1], hashIt(here));
@@ -31,35 +34,59 @@ public class GardenerBot extends Globals
 		while (true)
 		{
 			header();
-			if (amFarmer)
+			if (amFirstGardener)
 			{
-				if (scouts >= 1)
+				System.out.println(typeToSpawnFirst);
+				if (typeToSpawnFirst != null && spawn(typeToSpawnFirst))
 				{
-					if (planningRequired)
+					if (typeToSpawnFirst.equals(RobotType.SCOUT))
 					{
-						tryToPlantPlanned();
+						System.out.println(neutralTrees.length);
+						if (neutralTrees.length > 5)
+						{
+							typeToSpawnFirst = RobotType.LUMBERJACK;
+						}
+						else
+						{
+							typeToSpawnFirst = RobotType.SOLDIER;
+						}
 					}
-					else
+					else if (typeToSpawnFirst.equals(RobotType.LUMBERJACK))
 					{
-						tryToPlantUnplanned();
+						typeToSpawnFirst = RobotType.SOLDIER;
 					}
+					else if (typeToSpawnFirst.equals(RobotType.SOLDIER))
+					{
+						haveGuard = true;
+						typeToSpawnFirst = null;
+					}
+				}
+				else if (treesIPlanted < 3)
+				{
+					tryToPlantUnplanned();
+				}
+				else if (typeToSpawnFirst == null)
+				{
+					amFirstGardener = false;
+				}
+			}
+			else if (amFarmer)
+			{
+				if (planningRequired)
+				{
+					tryToPlantPlanned();
 				}
 				else
 				{
-					if (!tryToBuild())
-					{
-						TreeInfo[] allyTrees = rc.senseNearbyTrees(-1, us);
-						if (allyTrees.length < 4)
-						{
-							tryToPlantUnplanned();
-						}
-					}
+					tryToPlantUnplanned();
 				}
 			}
 			else
 			{
-				tryToBuild();
-				wander();
+				if (tryToBuild() && treesIPlanted < 2)
+				{
+					tryToPlantUnplanned();
+				}
 			}
 			footer();
 		}
@@ -70,6 +97,7 @@ public class GardenerBot extends Globals
 		updateRobotCount();
 		float farmerPercentage = ((float)farmers) / gardeners;
 		int iAmGardenerNumber = rc.readBroadcast(GARDENER_NUMBER_CHANNEL);
+		// int deadFarmers = rc.readBroadcast(DEAD_FARMERS_CHANNEL);
 		boolean answer = false;
 		if (farmerPercentage * farmerPercentage <= gameProgressPercentage)
 		{
@@ -122,7 +150,7 @@ public class GardenerBot extends Globals
 					wander();
 				}
 				tries++;
-				if (tries == 50)
+				if (tries == 20)
 				{
 					planningRequired = false;
 					tryToPlantUnplanned();
@@ -181,7 +209,7 @@ public class GardenerBot extends Globals
 		
 		// Replace stupidCondition with some other condition
 		
-		boolean stupidConditionForLumberjacks = lumberjacks <= scouts;
+		boolean stupidConditionForLumberjacks = lumberjacks <= scouts * 2;
 		if (stupidConditionForLumberjacks && lumberjacks < 20)
 		{
 			if (rc.hasRobotBuildRequirements(RobotType.LUMBERJACK))
@@ -190,7 +218,7 @@ public class GardenerBot extends Globals
 			}
 		}
 
-		boolean stupidConditionForSoldiers = (soldiers < farmers) || (nonAllyTreeDensity < 0.125f);
+		boolean stupidConditionForSoldiers = (soldiers < farmers * 2);
 		if (stupidConditionForSoldiers && soldiers < 25)
 		{
 			if (rc.hasRobotBuildRequirements(RobotType.SOLDIER))
@@ -220,7 +248,7 @@ public class GardenerBot extends Globals
 		}
 		int tries = 0;
 		Direction spawnDirection = here.directionTo(theirInitialArchons[0]);
-		while (tries < 100)
+		while (tries < 360)
 		{
 			if (type == RobotType.LUMBERJACK)
 			{
@@ -243,7 +271,7 @@ public class GardenerBot extends Globals
 			}
 			else
 			{
-				spawnDirection = spawnDirection.rotateLeftDegrees(4);
+				spawnDirection = spawnDirection.rotateLeftDegrees(1);
 			}
 			tries++;
 		}
