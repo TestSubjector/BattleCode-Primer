@@ -40,24 +40,6 @@ public class SoldierBot extends Globals
 				movingDirection = here.directionTo(closestArchonLocation);
 			}
 			
-			// Check all nearby enemies
-			for (RobotInfo enemy : enemies)
-			{
-				RobotType enemyType = enemy.getType();
-				MapLocation enemyLocation = enemy.getLocation();
-				if (enemyType == RobotType.LUMBERJACK && here.distanceTo(enemyLocation) - myType.bodyRadius < 3.5f)
-				{
-					movingDirection = enemyLocation.directionTo(here);
-					break;
-				}
-				else
-				{
-					movingDirection = here.directionTo(enemyLocation);
-					break;
-				}
-			}
-			
-			
 			// Look for broadcasted gardeners
 			int enemyGardeners = rc.readBroadcast(ENEMY_GARDENERS_CHANNELS[0]);
 			MapLocation closestGardenerLocation = null;
@@ -86,6 +68,24 @@ public class SoldierBot extends Globals
 			if (closestGardenerLocation != null)
 			{
 				movingDirection = here.directionTo(closestGardenerLocation);
+			}
+			
+			
+			// Check all nearby enemies
+			for (RobotInfo enemy : enemies)
+			{
+				RobotType enemyType = enemy.getType();
+				MapLocation enemyLocation = enemy.getLocation();
+				if (enemyType == RobotType.LUMBERJACK && here.distanceTo(enemyLocation) - myType.bodyRadius < 3.5f)
+				{
+					movingDirection = enemyLocation.directionTo(here);
+					break;
+				}
+				else
+				{
+					movingDirection = here.directionTo(enemyLocation);
+					break;
+				}
 			}
 			
 			// Defend your closest farmer
@@ -119,7 +119,16 @@ public class SoldierBot extends Globals
 				}
 				if (closestFarmLocation != null)
 				{
-					movingDirection = here.directionTo(closestFarmLocation);
+					Direction toClosestFarm = here.directionTo(closestFarmLocation);
+					float distanceToClosestFarm = here.distanceTo(closestFarmLocation);
+					if (distanceToClosestFarm > 4f)
+					{
+						movingDirection = toClosestFarm;
+					}
+					else
+					{
+						movingDirection = toClosestFarm.opposite();
+					}
 				}
 			}
 			

@@ -26,7 +26,7 @@ public class Globals
 	public static int tanks;
 	public static int gardeners;
 	public static int farmers;
-	public static float nonAllyTreeVolume;
+	public static float nonAllyTreeArea;
 	public static float nonAllyTreeDensity;
 	public static RobotInfo[] allies;
 	public static RobotInfo[] enemies;
@@ -110,18 +110,7 @@ public class Globals
 		treesPlanted = 0;
 		lumberjackTarget = -1;
 		lumberjackTargetLocation = null;
-		tryAngles = new int[91];
-		for (int i = 0; i < 91; i++)
-		{
-			if (i % 2 == 0)
-			{
-				tryAngles[i] = i / 2;
-			}
-			else
-			{
-				tryAngles[i] = -((i + 1) / 2);
-			}
-		}
+		initTryAngles();
 		seenEnemyGardeners = new HashMap<Integer, Integer>();
 		seenEnemyArchons = new HashMap<Integer, Integer>();
 		initChannels();
@@ -132,6 +121,22 @@ public class Globals
 		updateRobotCount();
 		int robotsOfThisType = robotCount[type.ordinal()];
 		rc.broadcast(type.ordinal(), robotsOfThisType + 1);
+	}
+	
+	public static void initTryAngles()
+	{
+		tryAngles = new int[181];
+		for (int i = 0; i < 181; i++)
+		{
+			if (i % 2 == 0)
+			{
+				tryAngles[i] = i / 2;
+			}
+			else
+			{
+				tryAngles[i] = -((i + 1) / 2);
+			}
+		}
 	}
 	
 	public static void initChannels()
@@ -253,7 +258,7 @@ public class Globals
 
 	private static void updateNonAllyTreeDensity()
 	{
-		nonAllyTreeDensity = (nonAllyTreeVolume / myType.sensorRadius);
+		nonAllyTreeDensity = (nonAllyTreeArea / myType.sensorRadius);
 	}
 	
 	public static void updateRobotCount()throws GameActionException
@@ -410,6 +415,9 @@ public class Globals
 	{
 		for (TreeInfo tree : neutralTrees)
 		{
+			float r = tree.getRadius();
+			float area = (float)Math.PI * r * r;
+			nonAllyTreeArea += area;
 			if (tree.getContainedBullets() > 0)
 			{
 				if (rc.canShake(tree.getID()))
@@ -435,20 +443,12 @@ public class Globals
 								lumberjackTarget = ID;
 								lumberjackTargetLocation = unhashedLocation;
 							}
-							if (tree.getID() == ID)
-							{
-								// already seen this tree
-								found = true; 
-							}
 						}
-						else
+						if (tree.getID() == ID)
 						{
-							if (tree.getID() == ID)
-							{
-								// already seen this tree
-								found = true; 
-								break;
-							}
+							// already seen this tree
+							found = true; 
+							break;
 						}
 					}
 					if (!found)
@@ -460,28 +460,13 @@ public class Globals
 						rc.broadcast(IMPORTANT_TREES_CHANNELS[0], numberOfTreesFound);
 					}
 				}
-				if (myType == RobotType.LUMBERJACK)
-				{
-					if (rc.canChop(tree.getID()))
-					{
-						rc.chop(tree.getID());
-					}
-					else
-					{
-						if (rc.canChop(neutralTrees[0].getID()))
-						{
-							rc.chop(neutralTrees[0].getID());
-						}
-						else if (enemyTrees.length != 0)
-						{
-							if (rc.canChop(enemyTrees[0].getID()))
-							{
-								rc.chop(enemyTrees[0].getID());
-							}
-						}
-					}
-				}
 			}
+		}
+		for (TreeInfo tree : enemyTrees)
+		{
+			float r = tree.getRadius();
+			float area = (float)Math.PI * r * r;
+			nonAllyTreeArea += area;
 		}
 	}
 	
@@ -509,6 +494,7 @@ public class Globals
 				}
 				catch (GameActionException e)
 				{
+					System.out.println("Catch kiya");
 					return false;
 				}
 			}
@@ -578,14 +564,17 @@ public class Globals
 
 	public static void tryToDodge()throws GameActionException
 	{
-		for (RobotInfo enemy : enemies)
+		if (!(myType == RobotType.LUMBERJACK))
 		{
-			RobotType enemyType = enemy.getType();
-			MapLocation enemyLocation = enemy.getLocation();
-			if (enemyType == RobotType.LUMBERJACK && here.distanceTo(enemyLocation) - myType.bodyRadius < 3.5f)
+			for (RobotInfo enemy : enemies)
 			{
-				tryToMove(enemyLocation.directionTo(here));
-				return;
+				RobotType enemyType = enemy.getType();
+				MapLocation enemyLocation = enemy.getLocation();
+				if (enemyType == RobotType.LUMBERJACK && here.distanceTo(enemyLocation) - myType.bodyRadius < 3.5f)
+				{
+					tryToMove(enemyLocation.directionTo(here));
+					return;
+				}
 			}
 		}
 		RobotInfo me = new RobotInfo(myID, us, myType, here, rc.getHealth(), rc.getAttackCount(), rc.getMoveCount());
@@ -639,11 +628,9 @@ public class Globals
 	public static boolean trySingleShot(RobotInfo enemy)throws GameActionException
 	{
 		Direction directionToCentre = here.directionTo(enemy.getLocation());
-		//float arcTanAngle = arcTanAngle(enemy);
 		if (rc.canFireSingleShot())
 		{
 			Direction shotDirection = directionToCentre;
-			// rc.setIndicatorLine(here, enemy.getLocation(), 0, 255, 0);
 			boolean killingFriend = false;
 			for (RobotInfo ally : allies)
 			{
@@ -707,6 +694,7 @@ public class Globals
 		}
 		updateEnemies();
 		updateTrees();
+		updateNonAllyTreeDensity();
 	}
 
 	// Footer to run at the end of each round

@@ -6,7 +6,14 @@ public class ScoutBot extends Globals
 	//private static boolean shotLastTurn;
 	public static void loop()throws GameActionException
 	{
-		movingDirection = here.directionTo(theirInitialArchons[0]);
+		if (ourInitialArchons[0].distanceTo(theirInitialArchons[0]) > 35f)
+		{
+			movingDirection = randomDirection();
+		}
+		else
+		{
+			movingDirection = here.directionTo(theirInitialArchons[0]);
+		}
 		while (true)
 		{
 			header();
@@ -69,10 +76,20 @@ public class ScoutBot extends Globals
 					break;
 				}
 			}
+			
 			// movingDirection decided, now tryToMove
 			if (!tryToMove(movingDirection))
 			{
-				movingDirection = randomDirection();
+				float angle = ((float)Math.random() * 90f);
+				double choice = Math.random();
+				if (choice > 0.5)
+				{
+					movingDirection = movingDirection.opposite().rotateLeftDegrees(angle);
+				}
+				else
+				{
+					movingDirection = movingDirection.opposite().rotateRightDegrees(angle);
+				}
 			}
 			shootClosestEnemy();
 			

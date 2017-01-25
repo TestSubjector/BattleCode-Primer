@@ -70,9 +70,6 @@ public class GardenerBot extends Globals
 		updateRobotCount();
 		float farmerPercentage = ((float)farmers) / gardeners;
 		int iAmGardenerNumber = rc.readBroadcast(GARDENER_NUMBER_CHANNEL);
-		System.out.println(gardeners);
-		System.out.println(farmers);
-		System.out.println(iAmGardenerNumber);
 		boolean answer = false;
 		if (farmerPercentage * farmerPercentage <= gameProgressPercentage)
 		{
@@ -174,7 +171,7 @@ public class GardenerBot extends Globals
 
 	private static boolean tryToBuild()throws GameActionException
 	{		
-		if (scouts < 2 || scouts < Math.ceil((20d * roundNum) / 3000d))
+		if (scouts < 2 || (scouts < Math.ceil((15d * roundNum) / 3000d)))
 		{
 			if (rc.hasRobotBuildRequirements(RobotType.SCOUT))
 			{
@@ -184,8 +181,8 @@ public class GardenerBot extends Globals
 		
 		// Replace stupidCondition with some other condition
 		
-		boolean stupidCondition = lumberjacks <= scouts;
-		if (stupidCondition && lumberjacks < 20)
+		boolean stupidConditionForLumberjacks = lumberjacks <= scouts;
+		if (stupidConditionForLumberjacks && lumberjacks < 20)
 		{
 			if (rc.hasRobotBuildRequirements(RobotType.LUMBERJACK))
 			{
@@ -193,8 +190,8 @@ public class GardenerBot extends Globals
 			}
 		}
 
-		stupidCondition = soldiers * 4 <= lumberjacks * 5;
-		if (stupidCondition && soldiers < 25)
+		boolean stupidConditionForSoldiers = (soldiers < farmers) || (nonAllyTreeDensity < 0.125f);
+		if (stupidConditionForSoldiers && soldiers < 25)
 		{
 			if (rc.hasRobotBuildRequirements(RobotType.SOLDIER))
 			{
@@ -222,7 +219,7 @@ public class GardenerBot extends Globals
 			return false;
 		}
 		int tries = 0;
-		Direction randomDir = randomDirection();
+		Direction spawnDirection = here.directionTo(theirInitialArchons[0]);
 		while (tries < 100)
 		{
 			if (type == RobotType.LUMBERJACK)
@@ -238,15 +235,15 @@ public class GardenerBot extends Globals
 					}
 				}
 			}
-			if (rc.canBuildRobot(type, randomDir))
+			if (rc.canBuildRobot(type, spawnDirection))
 			{
-				rc.buildRobot(type, randomDir);
+				rc.buildRobot(type, spawnDirection);
 				robotInit(type);
 				return true;
 			}
 			else
 			{
-				randomDir = randomDir.rotateLeftDegrees(4);
+				spawnDirection = spawnDirection.rotateLeftDegrees(4);
 			}
 			tries++;
 		}
@@ -326,8 +323,8 @@ public class GardenerBot extends Globals
                 rc.broadcast(TREE_CHANNEL, treesPlanted + 1);
                 return true;
 			}
-            plantDirection = plantDirection.rotateLeftDegrees(2);
-            angle += 2;
+            plantDirection = plantDirection.rotateLeftDegrees(1);
+            angle += 1;
 		}
 		return false;
 	}
