@@ -642,12 +642,12 @@ public class Globals
 		//float arcTanAngle = arcTanAngle(enemy);
 		if (rc.canFireSingleShot())
 		{
-			Direction shotDirection = directionToCentre;
+			// Direction shotDirection = directionToCentre;
 			// rc.setIndicatorLine(here, enemy.getLocation(), 0, 255, 0);
 			boolean killingFriend = false;
 			for (RobotInfo ally : allies)
 			{
-				if (willHitRobot(ally, shotDirection, here) && ally.getLocation().distanceTo(here) < enemy.getLocation().distanceTo(here))
+				if (willHitRobot(ally, directionToCentre, here) && ally.getLocation().distanceTo(here) < enemy.getLocation().distanceTo(here))
 				{
 					killingFriend = true;
 					break;
@@ -657,7 +657,7 @@ public class Globals
 			{
 				if (rc.canFireSingleShot())
 				{
-					rc.fireSingleShot(shotDirection);
+					rc.fireSingleShot(directionToCentre);
 				}
 				return true;
 			}
@@ -665,23 +665,142 @@ public class Globals
 		return false;
 	}
 	
+	public static int revisedTarget(boolean[] arr){
+		//returns -1 if majority of false, else returns first encountered false value index
+		int true_count=0;
+		int firstTrueIndex=-1; //first unhindered enemy
+		for(int i=0;i < arr.length;i++){
+			if(arr[i]){
+				true_count++;
+				if(firstTrueIndex==-1){
+					firstTrueIndex=i;
+				}
+			}
+		}
+		if(arr.length==3){
+			//triad shot
+			//2 on 3 need to be false (implies not hitting friend)
+			if(true_count<2){
+				return -1;
+			}
+			else{
+				return firstTrueIndex;
+			}
+		}
+		else{
+			//pentad shot
+			//3 on 5 need to be false
+			if(true_count<3){
+				return -1;
+			}
+			else{
+				return firstTrueIndex;
+			}
+		}
+	}
+	
 	public static boolean tryTriadShot(RobotInfo enemy)throws GameActionException
 	{
-		Direction directionToCentre = here.directionTo(enemy.getLocation());
+		Direction[] shotDirections = new Direction[]{null,here.directionTo(enemy.getLocation()),null}; //left,centre,right
+		shotDirections[0] = shotDirections[1].rotateLeftDegrees(GameConstants.TRIAD_SPREAD_DEGREES);
+		shotDirections[2] = shotDirections[1].rotateRightDegrees(GameConstants.TRIAD_SPREAD_DEGREES);
+		
+		RobotInfo[] RobotHit = new RobotInfo[]{null,enemy,null}; // left,centre,right
+		boolean[] friendHit = new boolean[]{false,false,false}; // left,centre,right
+		
 		if (rc.canFireTriadShot())
 		{
-			rc.fireTriadShot(directionToCentre);
+			if(willHitRobot(RobotHit[1],shotDirections[0],here)||willHitRobot(RobotHit[1],shotDirections[2],here)){
+				//2 out of 3 bullets hitting single enemy.
+				//Also means no need to check for allies in between due to proximity conditions
+				rc.fireTriadShot(shotDirections[1]);
+				return true;
+			}
+			for(RobotInfo foe : enemies){
+				if(willHitRobot(foe,shotDirections[0],here) && RobotHit[0]==null){
+					//since 'enemies' array is ordered closest to farthest, the first assignment to
+					//leftHit will be one it actually hits
+					RobotHit[0] = foe;
+				}
+				if(willHitRobot(foe,shotDirections[2],here) && RobotHit[1]==null){
+					//same as above
+					RobotHit[2] = foe;
+				}
+			}
+			//Now check for allies in between
+			for(RobotInfo ally:allies){
+				if(willHitRobot(ally,shotDirections[1],here) && ally.getLocation().distanceTo(here) < RobotHit[1].getLocation().distanceTo(here)){
+					//hitting ally not enemy
+					friendHit[1]=true;
+				}
+				if(willHitRobot(ally,shotDirections[0],here) && ally.getLocation().distanceTo(here) < RobotHit[0].getLocation().distanceTo(here)){
+					//hitting ally not enemy
+					friendHit[0]=true;
+				}
+				if(willHitRobot(ally,shotDirections[2],here) && ally.getLocation().distanceTo(here) < RobotHit[2].getLocation().distanceTo(here)){
+					//hitting ally not enemy
+					friendHit[2]=true;
+				}
+				int robotIndex= revisedTarget(friendHit);
+				if(robotIndex==-1){
+					//shoot triad
+					rc.fireTriadShot(shotDirections[1]);
+					return true;
+				}
+				else{
+					if(rc.canFireSingleShot()){
+						Direction fireDir = here.directionTo(RobotHit[robotIndex].getLocation());
+						rc.fireSingleShot(fireDir);
+						return true;
+					}
+				}
+			}
 			return true;
 		}
 		return false;
 	}
 	
 	public static boolean tryPentadShot(RobotInfo enemy)throws GameActionException
-	{
-		Direction directionToCentre = here.directionTo(enemy.getLocation());
-		if (rc.canFirePentadShot())
-		{
-			rc.firePentadShot(directionToCentre);
+	{	// all arrays are leftmost to rightmost. So, [2] is the centreDirection|Bot 
+		Direction[] shotDirections = new Direction[]{null,null,here.directionTo(enemy.getLocation()),null,null};
+		shotDirections[1] = shotDirections[2].rotateLeftDegrees(GameConstants.PENTAD_SPREAD_DEGREES);
+		shotDirections[0] = shotDirections[1].rotateLeftDegrees(GameConstants.PENTAD_SPREAD_DEGREES);
+		shotDirections[3] = shotDirections[2].rotateRightDegrees(GameConstants.PENTAD_SPREAD_DEGREES);
+		shotDirections[4] = shotDirections[3].rotateRightDegrees(GameConstants.PENTAD_SPREAD_DEGREES);
+		
+		RobotInfo[] RobotHit = new RobotInfo[]{null,null,enemy,null,null};
+		boolean[] friendHit = new boolean[]{false,false,false,false,false};
+		
+		if (rc.canFirePentadShot()){
+			
+			for(RobotInfo foe : enemies){
+				for(int i=0;i<5;i++){
+					if(willHitRobot(foe,shotDirections[i],here) && RobotHit[i]==null){
+						RobotHit[i] = foe;
+					}
+				}
+			}
+			//Now check for allies in between
+			for(RobotInfo ally:allies){
+				for(int i=0;i<5;i++){
+					if(willHitRobot(ally,shotDirections[i],here) && ally.getLocation().distanceTo(here) < RobotHit[i].getLocation().distanceTo(here)){
+						friendHit[i] = true;
+					}
+				}
+				int robotIndex= revisedTarget(friendHit);
+				if(robotIndex==-1){
+					//shoot pentad
+					rc.firePentadShot(shotDirections[2]);
+					return true;
+				}
+				else{
+					if(rc.canFireSingleShot()){
+						Direction fireDir = here.directionTo(RobotHit[robotIndex].getLocation());
+						rc.fireSingleShot(fireDir);
+						return true; //technically not Pentad, but fired nonetheless
+					}
+				}
+			}
 			return true;
 		}
 		return false;
