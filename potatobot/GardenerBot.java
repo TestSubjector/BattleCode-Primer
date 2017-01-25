@@ -3,50 +3,46 @@ import battlecode.common.*;
 
 public class GardenerBot extends Globals
 {
-	private static boolean amFarmer;
 	private static boolean planningRequired = true;
 	private static Direction plantMoveDirection = Direction.getEast();
 	private static Direction plantDirection = Direction.getNorth();
 	private static int treesIPlanted = 0;
-	private static int buildThis = 0;
+	private static boolean haveGuard = false;
 	
 	public static void loop()throws GameActionException
 	{
-		updateRobotCount();
-		int gardeners = robotCount[RobotType.GARDENER.ordinal()];
-		rc.broadcast(RobotType.GARDENER.ordinal(), gardeners + 1);
 		amFarmer = shouldIBeAFarmer();
 		if (amFarmer)
 		{
+			updateRobotCount();
+			int farmersBefore = robotCount[farmerIndex];
+			rc.broadcast(farmerIndex, farmersBefore + 1);
 			getClear();
+			int farmIndex = rc.readBroadcast(FARM_LOCATIONS_CHANNELS[0]);
+			farmIndex++;
+			rc.broadcast(FARM_LOCATIONS_CHANNELS[farmIndex], hashIt(here));
+			rc.broadcast(FARM_LOCATIONS_CHANNELS[0], farmIndex);
 		}
 		while (true)
 		{
 			header();
 			if (amFarmer)
 			{
-				if (planningRequired)
+				int scouts = robotCount[RobotType.SCOUT.ordinal()];
+				if (scouts >= 1)
 				{
-					tryToPlantPlanned();
-				}
-				else
-				{
-					tryToPlantUnplanned();
-				}
-				if (buildThis == 3)
-				{
-					int scouts = robotCount[RobotType.SCOUT.ordinal()];
-					if (scouts < robotCountMax[RobotType.SCOUT.ordinal()])
+					if (planningRequired)
 					{
-						if (spawn(RobotType.SCOUT))
-						{
-							rc.broadcast(BUILD_CHANNEL, 2);
-						}
+						tryToPlantPlanned();
 					}
 					else
 					{
-						rc.broadcast(BUILD_CHANNEL, 2);
+						tryToPlantUnplanned();
 					}
+				}
+				else
+				{
+					tryToBuild();
 				}
 			}
 			else
@@ -56,6 +52,35 @@ public class GardenerBot extends Globals
 			}
 			footer();
 		}
+	}
+	
+	private static boolean shouldIBeAFarmer()throws GameActionException
+	{
+		updateRobotCount();
+		float gardeners = robotCount[myType.ordinal()];
+		float farmers = robotCount[farmerIndex];
+		float farmerPercentage = farmers / gardeners;
+		int gardenersThisTurn = rc.readBroadcast(GARDENERS_CHANNEL);
+		int thisTurnGardenerNumber = rc.readBroadcast(GARDENER_NUMBER_CHANNEL);
+		System.out.println(gardenersThisTurn);
+		System.out.println(thisTurnGardenerNumber);
+		System.out.println(gardeners);
+		System.out.println(farmers);
+		boolean answer = false;
+		if (gardenersThisTurn > 1 && thisTurnGardenerNumber % 2 == 0)
+		{
+			answer = true;
+		}
+		else if (gardeners <= 3)
+		{
+			answer = false;
+		}
+		else if (farmerPercentage <= gameProgressPercentage * gameProgressPercentage)
+		{
+			answer = true;
+		}
+		rc.broadcast(GARDENER_NUMBER_CHANNEL, thisTurnGardenerNumber + 1);
+		return answer;
 	}
 
 	private static void getClear()throws GameActionException
@@ -102,10 +127,6 @@ public class GardenerBot extends Globals
 				footer();
 			}
 		}
-		int farmIndex = rc.readBroadcast(FARM_LOCATIONS_CHANNELS[0]);
-		farmIndex++;
-		rc.broadcast(FARM_LOCATIONS_CHANNELS[farmIndex], hashIt(here));
-		rc.broadcast(FARM_LOCATIONS_CHANNELS[0], farmIndex);
 	}
 	
 	private static void marchOn()throws GameActionException
@@ -142,84 +163,67 @@ public class GardenerBot extends Globals
         footer();
         header();
         tryToMoveThisMuch(plantMoveDirection.opposite(), 0.1f);
-	}
-	
-	private static boolean shouldIBeAFarmer()throws GameActionException
-	{
-		updateRobotCount();
-		int gardeners = robotCount[myType.ordinal()];
-		if (gardeners > 2 && gardeners % 2 == 1)
-		{
-			return true;
-		}
-		return false;
-	}
-	
+	}	
 
-	private static void tryToBuild()throws GameActionException
+	private static boolean tryToBuild()throws GameActionException
 	{		
+		int scouts = robotCount[RobotType.SCOUT.ordinal()];
+		int lumberjacks = robotCount[RobotType.LUMBERJACK.ordinal()];
+		int soldiers = robotCount[RobotType.SOLDIER.ordinal()];
+		// int tanks = robotCount[RobotType.TANK.ordinal()];
+		// int farmers = robotCount[farmerIndex];
 
-		buildThis = rc.readBroadcast(BUILD_CHANNEL);
-		switch (buildThis)
+		
+		if (scouts < 2 || scouts < Math.ceil((20d * roundNum) / 3000d))
 		{
-			case 0:
-				rc.broadcast(BUILD_CHANNEL, 3);
-				break;
-	
-			case 2:
-				int lumberjacks = robotCount[RobotType.LUMBERJACK.ordinal()];
-				if (lumberjacks < robotCountMax[RobotType.LUMBERJACK.ordinal()])
-				{
-					if (spawn(RobotType.LUMBERJACK))
-					{
-						rc.broadcast(BUILD_CHANNEL, 4);
-					}
-				}
-				else
-				{
-					rc.broadcast(BUILD_CHANNEL, 4);
-				}
-				break;
-			
-			case 3:
-				int scouts = robotCount[RobotType.SCOUT.ordinal()];
-				if (scouts < robotCountMax[RobotType.SCOUT.ordinal()])
-				{
-					if (spawn(RobotType.SCOUT))
-					{
-						rc.broadcast(BUILD_CHANNEL, 2);
-					}
-				}
-				else
-				{
-					rc.broadcast(BUILD_CHANNEL, 2);
-				}
-				break;
-			
-			case 4:
-				int soldiers = robotCount[RobotType.SOLDIER.ordinal()];
-				if (soldiers < robotCountMax[RobotType.SOLDIER.ordinal()])
-				{
-					if (spawn(RobotType.SOLDIER))
-					{
-						rc.broadcast(BUILD_CHANNEL, 3);
-					}
-				}
-				else
-				{
-					rc.broadcast(BUILD_CHANNEL, 3);
-				}
-				break;	
-				
-			default:
-				System.out.println("Bro wtf");
+			if (rc.hasRobotBuildRequirements(RobotType.SCOUT))
+			{
+				return spawn(RobotType.SCOUT);
+			}
 		}
+		
+		// Replace stupidCondition with some other condition
+		
+		boolean stupidCondition = soldiers * 2 <= lumberjacks * 3;
+		if (stupidCondition && soldiers < 30)
+		{
+			if (rc.hasRobotBuildRequirements(RobotType.SOLDIER))
+			{
+				return spawn(RobotType.SOLDIER);
+			}
+		}
+		
+		stupidCondition = lumberjacks <= scouts * 2;
+		if (stupidCondition && lumberjacks < 15)
+		{
+			if (rc.hasRobotBuildRequirements(RobotType.LUMBERJACK))
+			{
+				return spawn(RobotType.LUMBERJACK);
+			}
+		}
+		
+		/* Make tanks later		
+		stupidCondition = tanks * 2 < soldiers;
+		if (stupidCondition && tanks < 20)
+		{
+			if (rc.hasRobotBuildRequirements(RobotType.TANK))
+			{
+				return spawn(RobotType.TANK);
+			}
+		}
+		*/
+		return false;
 	}
 	
 	private static boolean spawn(RobotType type)throws GameActionException
 	{
+		if (!rc.hasRobotBuildRequirements(type))
+		{
+			return false;
+		}
 		int tries = 0;
-		while (tries < 20)
+		Direction randomDir = randomDirection();
+		while (tries < 100)
 		{
 			if (type == RobotType.LUMBERJACK)
 			{
@@ -229,25 +233,35 @@ public class GardenerBot extends Globals
 					if (rc.canBuildRobot(type, buildDirection))
 					{
 						rc.buildRobot(type, buildDirection);
-						rc.broadcast(type.ordinal(), robotCount[type.ordinal()] + 1);
+						robotInit(type);
 						return true;
 					}
 				}
 			}
-			Direction randomDir = randomDirection();
 			if (rc.canBuildRobot(type, randomDir))
 			{
 				rc.buildRobot(type, randomDir);
-				rc.broadcast(type.ordinal(), robotCount[type.ordinal()] + 1);
+				robotInit(type);
 				return true;
+			}
+			else
+			{
+				randomDir = randomDir.rotateLeftDegrees(4);
 			}
 			tries++;
 		}
 		return false;
 	}
 	
-	private static void tryToPlantPlanned()throws GameActionException
+	private static boolean tryToPlantPlanned()throws GameActionException
 	{
+		if (!haveGuard)
+		{
+			if (spawn(RobotType.SOLDIER))
+			{
+				haveGuard = true;
+			}
+		}
 		if (bullets > GameConstants.BULLET_TREE_COST)
 		{
 			if (treesIPlanted < 4)
@@ -269,7 +283,7 @@ public class GardenerBot extends Globals
 	            {
 	            	planningRequired = false;
 	            	moveBack();
-	            	return;
+	            	return false;
 	            }
                 rc.plantTree(plantDirection);
                 treesIPlanted++;
@@ -281,17 +295,26 @@ public class GardenerBot extends Globals
                 {
                 	plantMoveDirection = plantMoveDirection.opposite();
                 }
+                return true;
 			}
 			else
 			{
 				planningRequired = false;
-				tryToPlantUnplanned();
+				return tryToPlantUnplanned();
 			}
 		}
+		return false;
 	}
 
 	private static boolean tryToPlantUnplanned()throws GameActionException
 	{
+		if (!haveGuard)
+		{
+			if (spawn(RobotType.SOLDIER))
+			{
+				haveGuard = true;
+			}
+		}
 		int angle = 0;
 		while (angle <= 360)
 		{

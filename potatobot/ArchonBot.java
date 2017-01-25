@@ -11,11 +11,17 @@ public class ArchonBot extends Globals
 			int gardeners = robotCount[RobotType.GARDENER.ordinal()];
 			int scouts = robotCount[RobotType.SCOUT.ordinal()];
 			int lumberjacks = robotCount[RobotType.LUMBERJACK.ordinal()];
-			if (gardeners < robotCountMax[RobotType.GARDENER.ordinal()] && (gardeners < 4 || gardeners < (scouts + lumberjacks) / 2))
-			{
-				tryHiringGardener(gardeners);
-			}
+			int soldiers = robotCount[RobotType.SOLDIER.ordinal()];
 			TreeInfo[] allyTrees = rc.senseNearbyTrees(-1, us);
+			if (gardeners < 2 || (scouts + lumberjacks + soldiers > gardeners * 2 && neutralTrees.length + allyTrees.length < 20))
+			{
+				if (tryHiringGardener(gardeners))
+				{
+					robotInit(RobotType.GARDENER);
+					int indexOfGardeners = rc.readBroadcast(GARDENERS_CHANNEL);
+					rc.broadcast(GARDENERS_CHANNEL, indexOfGardeners + 1);
+				}
+			}
 			BodyInfo[][] array = {enemies, allies, neutralTrees, enemyTrees, allyTrees};
 			Direction awayFromNearestObstacle = findDirectionAwayFromNearestObstacle(array);		
 			if (awayFromNearestObstacle != null)
@@ -71,7 +77,7 @@ public class ArchonBot extends Globals
 		while (angle < 360)
 		{
 			Direction sensorDirection = initialDirection.rotateLeftDegrees(angle);
-			while (!rc.onTheMap(here.add(sensorDirection, minDist)))
+			while (rc.canSenseLocation(here.add(sensorDirection, minDist)) && !rc.onTheMap(here.add(sensorDirection, minDist)))
 			{
 				minDist = Math.max(minDist - 0.5f, 2.0f);
 				if (minDist <= 2.01f)
@@ -85,7 +91,7 @@ public class ArchonBot extends Globals
 		return awayFromNearestObstacle;
 	}
 
-	public static void tryHiringGardener(int gardeners)throws GameActionException
+	public static boolean tryHiringGardener(int gardeners)throws GameActionException
 	{
 		int tries = 0;
 		Direction hireDirection = randomDirection();
@@ -94,7 +100,7 @@ public class ArchonBot extends Globals
 			if (rc.canHireGardener(hireDirection))
 			{
 				rc.hireGardener(hireDirection);
-				break;
+				return true;
 			}
 			else
 			{
@@ -102,5 +108,6 @@ public class ArchonBot extends Globals
 			}
 			tries++;
 		}
+		return false;
 	}
 }

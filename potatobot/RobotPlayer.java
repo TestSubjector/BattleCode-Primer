@@ -5,8 +5,8 @@ public class RobotPlayer extends Globals
 {
 	public static void run(RobotController rcinit)throws GameActionException
 	{
-		Globals.init(rcinit);
-		Globals.updateLocation();
+		init(rcinit);
+		updateLocation();
 		switch (myType) 
 		{
 		    case ARCHON:
