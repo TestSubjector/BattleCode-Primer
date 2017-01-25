@@ -100,28 +100,27 @@ public class TankBot extends Globals
 	
 	private static boolean shootClosestEnemy()throws GameActionException 
 	{
-		if (here.distanceTo(enemies[0].getLocation()) <= 5 || (enemies.length > 4 && enemies.length * 3 > allies.length * 2))
-		{
-			if (tryPentadShot(enemies[0]))
+		for(RobotInfo enemy:enemies){
+			if (here.distanceTo(enemy.getLocation()) <= 5 || (enemies.length > 4 && enemies.length * 3 > allies.length * 2))
 			{
-				return true;
-			}
-		}
-		else if (here.distanceTo(enemies[0].getLocation()) <= 7 || (enemies.length > 3 && enemies.length * 3 > allies.length * 2))
-		{
-			if (tryTriadShot(enemies[0]))
-			{
-				return true;
-			}
-		}
-		else
-		{
-			for (RobotInfo enemy : enemies)
-			{
-				if (trySingleShot(enemy))
+				if (tryPentadShot(enemy))
 				{
 					return true;
 				}
+			}
+			else if (here.distanceTo(enemy.getLocation()) <= 7 || (enemies.length > 3 && enemies.length * 3 > allies.length * 2))
+			{
+				if (tryTriadShot(enemy))
+				{
+					return true;
+				}
+			}
+			else
+			{
+					if (trySingleShot(enemy))
+					{
+						return true;
+					}
 			}
 		}
 		return false;

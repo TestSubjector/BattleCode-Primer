@@ -665,36 +665,32 @@ public class Globals
 		return false;
 	}
 	
-	public static int revisedTarget(boolean[] arr){
-		//returns -1 if majority of false, else returns first encountered false value index
+	public static boolean reviseTarget(boolean[] arr){
+		//returns false if no change needed (i.e. shoot) else true if shoot has to be aborted
 		int true_count=0;
-		int firstTrueIndex=-1; //first unhindered enemy
 		for(int i=0;i < arr.length;i++){
 			if(arr[i]){
 				true_count++;
-				if(firstTrueIndex==-1){
-					firstTrueIndex=i;
-				}
 			}
 		}
 		if(arr.length==3){
 			//triad shot
 			//2 on 3 need to be false (implies not hitting friend)
 			if(true_count<2){
-				return -1;
+				return false;
 			}
 			else{
-				return firstTrueIndex;
+				return true;
 			}
 		}
 		else{
 			//pentad shot
 			//3 on 5 need to be false
 			if(true_count<3){
-				return -1;
+				return false;
 			}
 			else{
-				return firstTrueIndex;
+				return true;
 			}
 		}
 	}
@@ -741,21 +737,13 @@ public class Globals
 					//hitting ally not enemy
 					friendHit[2]=true;
 				}
-				int robotIndex= revisedTarget(friendHit);
-				if(robotIndex==-1){
+				
+				if(!reviseTarget(friendHit)){
 					//shoot triad
 					rc.fireTriadShot(shotDirections[1]);
 					return true;
 				}
-				else{
-					if(rc.canFireSingleShot()){
-						Direction fireDir = here.directionTo(RobotHit[robotIndex].getLocation());
-						rc.fireSingleShot(fireDir);
-						return true;
-					}
-				}
 			}
-			return true;
 		}
 		return false;
 	}
@@ -787,21 +775,13 @@ public class Globals
 						friendHit[i] = true;
 					}
 				}
-				int robotIndex= revisedTarget(friendHit);
-				if(robotIndex==-1){
+				
+				if(!reviseTarget(friendHit)){
 					//shoot pentad
 					rc.firePentadShot(shotDirections[2]);
 					return true;
 				}
-				else{
-					if(rc.canFireSingleShot()){
-						Direction fireDir = here.directionTo(RobotHit[robotIndex].getLocation());
-						rc.fireSingleShot(fireDir);
-						return true; //technically not Pentad, but fired nonetheless
-					}
-				}
 			}
-			return true;
 		}
 		return false;
 	}
