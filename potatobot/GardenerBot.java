@@ -15,20 +15,24 @@ public class GardenerBot extends Globals
 		if (amFarmer)
 		{
 			updateRobotCount();
-			int farmersBefore = robotCount[farmerIndex];
-			rc.broadcast(farmerIndex, farmersBefore + 1);
-			getClear();
+			rc.broadcast(farmerIndex, farmers + 1);
+			if (robotCount[farmerIndex] > 0)
+			{
+				getClear();
+			}
+			else
+			{
+				planningRequired = false;
+			}
 			int farmIndex = rc.readBroadcast(FARM_LOCATIONS_CHANNELS[0]);
-			farmIndex++;
-			rc.broadcast(FARM_LOCATIONS_CHANNELS[farmIndex], hashIt(here));
-			rc.broadcast(FARM_LOCATIONS_CHANNELS[0], farmIndex);
+			rc.broadcast(FARM_LOCATIONS_CHANNELS[farmIndex + 1], hashIt(here));
+			rc.broadcast(FARM_LOCATIONS_CHANNELS[0], farmIndex + 1);
 		}
 		while (true)
 		{
 			header();
 			if (amFarmer)
 			{
-				int scouts = robotCount[RobotType.SCOUT.ordinal()];
 				if (scouts >= 1)
 				{
 					if (planningRequired)
@@ -42,7 +46,14 @@ public class GardenerBot extends Globals
 				}
 				else
 				{
-					tryToBuild();
+					if (!tryToBuild())
+					{
+						TreeInfo[] allyTrees = rc.senseNearbyTrees(-1, us);
+						if (allyTrees.length < 4)
+						{
+							tryToPlantUnplanned();
+						}
+					}
 				}
 			}
 			else
@@ -57,29 +68,25 @@ public class GardenerBot extends Globals
 	private static boolean shouldIBeAFarmer()throws GameActionException
 	{
 		updateRobotCount();
-		float gardeners = robotCount[myType.ordinal()];
-		float farmers = robotCount[farmerIndex];
-		float farmerPercentage = farmers / gardeners;
-		int gardenersThisTurn = rc.readBroadcast(GARDENERS_CHANNEL);
-		int thisTurnGardenerNumber = rc.readBroadcast(GARDENER_NUMBER_CHANNEL);
-		System.out.println(gardenersThisTurn);
-		System.out.println(thisTurnGardenerNumber);
+		float farmerPercentage = ((float)farmers) / gardeners;
+		int iAmGardenerNumber = rc.readBroadcast(GARDENER_NUMBER_CHANNEL);
 		System.out.println(gardeners);
 		System.out.println(farmers);
+		System.out.println(iAmGardenerNumber);
 		boolean answer = false;
-		if (gardenersThisTurn > 1 && thisTurnGardenerNumber % 2 == 0)
+		if (farmerPercentage * farmerPercentage <= gameProgressPercentage)
 		{
 			answer = true;
 		}
-		else if (gardeners <= 3)
+		else if (iAmGardenerNumber % 2 == 0)
+		{
+			answer = true;
+		}
+		else
 		{
 			answer = false;
 		}
-		else if (farmerPercentage <= gameProgressPercentage * gameProgressPercentage)
-		{
-			answer = true;
-		}
-		rc.broadcast(GARDENER_NUMBER_CHANNEL, thisTurnGardenerNumber + 1);
+		rc.broadcast(GARDENER_NUMBER_CHANNEL, iAmGardenerNumber + 1);
 		return answer;
 	}
 
@@ -167,13 +174,6 @@ public class GardenerBot extends Globals
 
 	private static boolean tryToBuild()throws GameActionException
 	{		
-		int scouts = robotCount[RobotType.SCOUT.ordinal()];
-		int lumberjacks = robotCount[RobotType.LUMBERJACK.ordinal()];
-		int soldiers = robotCount[RobotType.SOLDIER.ordinal()];
-		// int tanks = robotCount[RobotType.TANK.ordinal()];
-		// int farmers = robotCount[farmerIndex];
-
-		
 		if (scouts < 2 || scouts < Math.ceil((20d * roundNum) / 3000d))
 		{
 			if (rc.hasRobotBuildRequirements(RobotType.SCOUT))
@@ -184,21 +184,21 @@ public class GardenerBot extends Globals
 		
 		// Replace stupidCondition with some other condition
 		
-		boolean stupidCondition = soldiers * 2 <= lumberjacks * 3;
-		if (stupidCondition && soldiers < 30)
-		{
-			if (rc.hasRobotBuildRequirements(RobotType.SOLDIER))
-			{
-				return spawn(RobotType.SOLDIER);
-			}
-		}
-		
-		stupidCondition = lumberjacks <= scouts * 2;
-		if (stupidCondition && lumberjacks < 15)
+		boolean stupidCondition = lumberjacks <= scouts;
+		if (stupidCondition && lumberjacks < 20)
 		{
 			if (rc.hasRobotBuildRequirements(RobotType.LUMBERJACK))
 			{
 				return spawn(RobotType.LUMBERJACK);
+			}
+		}
+
+		stupidCondition = soldiers * 4 <= lumberjacks * 5;
+		if (stupidCondition && soldiers < 25)
+		{
+			if (rc.hasRobotBuildRequirements(RobotType.SOLDIER))
+			{
+				return spawn(RobotType.SOLDIER);
 			}
 		}
 		

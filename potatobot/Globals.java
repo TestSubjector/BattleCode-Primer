@@ -20,6 +20,14 @@ public class Globals
 	public static int victoryPoints;
 	public static Direction movingDirection;
 	public static int[] robotCount;
+	public static int scouts;
+	public static int lumberjacks;
+	public static int soldiers;
+	public static int tanks;
+	public static int gardeners;
+	public static int farmers;
+	public static float nonAllyTreeVolume;
+	public static float nonAllyTreeDensity;
 	public static RobotInfo[] allies;
 	public static RobotInfo[] enemies;
 	public static TreeInfo[] neutralTrees;
@@ -35,8 +43,6 @@ public class Globals
 	
 	// Broadcast Channels
 	public static int TREE_CHANNEL = 64;
-	
-	public static int GARDENERS_CHANNEL = 66;
 	
 	public static int GARDENER_NUMBER_CHANNEL = 67;
 	
@@ -98,6 +104,8 @@ public class Globals
 		victoryPoints = 0;
 		movingDirection = randomDirection();
 		robotCount = new int[8];
+		updateRobotCount();
+		updateNonAllyTreeDensity();
 		numberOfArchons = theirInitialArchons.length;
 		treesPlanted = 0;
 		lumberjackTarget = -1;
@@ -118,7 +126,7 @@ public class Globals
 		seenEnemyArchons = new HashMap<Integer, Integer>();
 		initChannels();
 	}
-	
+
 	public static void robotInit(RobotType type)throws GameActionException
 	{
 		updateRobotCount();
@@ -242,6 +250,11 @@ public class Globals
 	{
 		treesPlanted = rc.readBroadcast(TREE_CHANNEL);
 	}
+
+	private static void updateNonAllyTreeDensity()
+	{
+		nonAllyTreeDensity = (nonAllyTreeVolume / myType.sensorRadius);
+	}
 	
 	public static void updateRobotCount()throws GameActionException
 	{
@@ -249,6 +262,12 @@ public class Globals
 		{
 			robotCount[i] = rc.readBroadcast(i);
 		}
+		scouts = robotCount[RobotType.SCOUT.ordinal()];
+		lumberjacks = robotCount[RobotType.LUMBERJACK.ordinal()];
+		soldiers = robotCount[RobotType.SOLDIER.ordinal()];
+		tanks = robotCount[RobotType.TANK.ordinal()];
+		gardeners = robotCount[RobotType.GARDENER.ordinal()];
+		farmers = robotCount[farmerIndex];
 	}
 
 	public static void updateNearbyBullets()throws GameActionException

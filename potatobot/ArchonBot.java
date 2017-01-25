@@ -8,18 +8,12 @@ public class ArchonBot extends Globals
 		while (true)
 		{
 			header();
-			int gardeners = robotCount[RobotType.GARDENER.ordinal()];
-			int scouts = robotCount[RobotType.SCOUT.ordinal()];
-			int lumberjacks = robotCount[RobotType.LUMBERJACK.ordinal()];
-			int soldiers = robotCount[RobotType.SOLDIER.ordinal()];
 			TreeInfo[] allyTrees = rc.senseNearbyTrees(-1, us);
 			if (gardeners < 2 || (scouts + lumberjacks + soldiers > gardeners * 2 && neutralTrees.length + allyTrees.length < 20))
 			{
-				if (tryHiringGardener(gardeners))
+				if (tryHiringGardener())
 				{
 					robotInit(RobotType.GARDENER);
-					int indexOfGardeners = rc.readBroadcast(GARDENERS_CHANNEL);
-					rc.broadcast(GARDENERS_CHANNEL, indexOfGardeners + 1);
 				}
 			}
 			BodyInfo[][] array = {enemies, allies, neutralTrees, enemyTrees, allyTrees};
@@ -91,7 +85,7 @@ public class ArchonBot extends Globals
 		return awayFromNearestObstacle;
 	}
 
-	public static boolean tryHiringGardener(int gardeners)throws GameActionException
+	public static boolean tryHiringGardener()throws GameActionException
 	{
 		int tries = 0;
 		Direction hireDirection = randomDirection();
