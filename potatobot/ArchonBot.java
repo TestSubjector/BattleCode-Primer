@@ -9,7 +9,8 @@ public class ArchonBot extends Globals
 		{
 			header();
 			TreeInfo[] allyTrees = rc.senseNearbyTrees(-1, us);
-			if (gardeners < 2 || (scouts + lumberjacks + soldiers > gardeners * 2 && neutralTrees.length + allyTrees.length < 20))
+			// Use TreeDensity after Akhil is done with the maths
+			if (bullets > 151 && (soldiers >= 1 || gardeners < 1))
 			{
 				if (tryHiringGardener())
 				{

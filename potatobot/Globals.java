@@ -40,9 +40,12 @@ public class Globals
 	public static int[] tryAngles;
 	public static HashMap<Integer, Integer> seenEnemyGardeners;
 	public static HashMap<Integer, Integer> seenEnemyArchons;
+	public static HashMap<Integer, Integer> seenImportantTrees;
 	
 	// Broadcast Channels
 	public static int TREE_CHANNEL = 64;
+	
+	public static int DEAD_FARMERS_CHANNEL = 66;
 	
 	public static int GARDENER_NUMBER_CHANNEL = 67;
 	
@@ -113,6 +116,7 @@ public class Globals
 		initTryAngles();
 		seenEnemyGardeners = new HashMap<Integer, Integer>();
 		seenEnemyArchons = new HashMap<Integer, Integer>();
+		seenImportantTrees = new HashMap<Integer, Integer>();
 		initChannels();
 	}
 
@@ -243,6 +247,8 @@ public class Globals
 		{
 			robotsOfMyType = robotCount[farmerIndex];
 			rc.broadcast(farmerIndex, robotsOfMyType - 1);
+			int deadFarmers = rc.readBroadcast(DEAD_FARMERS_CHANNEL);
+			rc.broadcast(DEAD_FARMERS_CHANNEL, deadFarmers + 1);
 		}
 	}
 	
@@ -258,7 +264,8 @@ public class Globals
 
 	private static void updateNonAllyTreeDensity()
 	{
-		nonAllyTreeDensity = (nonAllyTreeArea / myType.sensorRadius);
+		float sightArea = (float)Math.PI * myType.sensorRadius * myType.sensorRadius;
+		nonAllyTreeDensity = (nonAllyTreeArea / sightArea);
 	}
 	
 	public static void updateRobotCount()throws GameActionException
@@ -390,25 +397,6 @@ public class Globals
 				}
 			}
 		}
-		for (int i = 2; i <= enemyGardeners * 2; i += 2)
-		{
-			int hashedLocation = rc.readBroadcast(ENEMY_GARDENERS_CHANNELS[i]);
-			if (hashedLocation == -1)
-			{
-				continue;
-			}
-		}
-		for (int i = 2; i <= enemyArchons * 2; i += 2)
-		{
-			int hashedLocation = rc.readBroadcast(ENEMY_ARCHONS_CHANNELS[i]);
-			if (hashedLocation == -1)
-			{
-				continue;
-			}
-		}
-		/*
-		haveTarget = ((rc.readBroadcast(ENEMY_ARCHONS_CHANNELS[7]) > 0) && ((roundNum - rc.readBroadcast(ENEMY_ARCHONS_CHANNELS[8])) < 10));
-		*/
 	}
 	
 	public static void updateTrees()throws GameActionException
@@ -418,6 +406,8 @@ public class Globals
 			float r = tree.getRadius();
 			float area = (float)Math.PI * r * r;
 			nonAllyTreeArea += area;
+			MapLocation treeLocation = tree.getLocation();
+			int treeID = tree.getID();
 			if (tree.getContainedBullets() > 0)
 			{
 				if (rc.canShake(tree.getID()))
@@ -430,38 +420,34 @@ public class Globals
 				int numberOfTreesFound = rc.readBroadcast(IMPORTANT_TREES_CHANNELS[0]);
 				if (numberOfTreesFound < 200)
 				{
-					boolean found = false; // initial value
-					for (int i = 1; i < numberOfTreesFound * 2; i += 2)
+					if (!seenImportantTrees.containsKey(treeID))
 					{
-						int ID = rc.readBroadcast(IMPORTANT_TREES_CHANNELS[i]);
-						if (myType == RobotType.LUMBERJACK)
-						{
-							MapLocation unhashedLocation = unhashIt(rc.readBroadcast(IMPORTANT_TREES_CHANNELS[i + 1]));
-							if (lumberjackTarget == -1 || unhashedLocation.distanceTo(here) < lumberjackTargetLocation.distanceTo(here))
-							{
-								// this is the first target, or a closer one
-								lumberjackTarget = ID;
-								lumberjackTargetLocation = unhashedLocation;
-							}
-						}
-						if (tree.getID() == ID)
-						{
-							// already seen this tree
-							found = true; 
-							break;
-						}
-					}
-					if (!found)
-					{
-						int hashedLocation = hashIt(tree.getLocation());
-						rc.broadcast(IMPORTANT_TREES_CHANNELS[numberOfTreesFound * 2 + 1], tree.getID());
+						int hashedLocation = hashIt(treeLocation);
+						rc.broadcast(IMPORTANT_TREES_CHANNELS[numberOfTreesFound * 2 + 1], treeID);
 						rc.broadcast(IMPORTANT_TREES_CHANNELS[numberOfTreesFound * 2 + 2], hashedLocation);
-						numberOfTreesFound++;
-						rc.broadcast(IMPORTANT_TREES_CHANNELS[0], numberOfTreesFound);
+						rc.broadcast(IMPORTANT_TREES_CHANNELS[0], numberOfTreesFound + 1);
+						seenImportantTrees.put(treeID, numberOfTreesFound + 1);
 					}
 				}
 			}
 		}
+		int numberOfTreesFound = rc.readBroadcast(IMPORTANT_TREES_CHANNELS[0]);
+		for (int i = 1; i < numberOfTreesFound * 2; i += 2)
+		{
+			int ID = rc.readBroadcast(IMPORTANT_TREES_CHANNELS[i]);
+			int hashedLocation = rc.readBroadcast(IMPORTANT_TREES_CHANNELS[i + 1]);
+			MapLocation unhashedLocation = unhashIt(hashedLocation);
+			if (myType == RobotType.LUMBERJACK && (lumberjackTarget == -1 || here.distanceTo(unhashedLocation) < here.distanceTo(lumberjackTargetLocation)))
+			{
+				lumberjackTarget = ID;
+				lumberjackTargetLocation = unhashedLocation;
+			}
+			if (rc.canSenseLocation(unhashedLocation) && !rc.canSenseTree(ID))
+			{
+				rc.broadcast(IMPORTANT_TREES_CHANNELS[i + 1], -1);
+			}
+		}
+
 		for (TreeInfo tree : enemyTrees)
 		{
 			float r = tree.getRadius();

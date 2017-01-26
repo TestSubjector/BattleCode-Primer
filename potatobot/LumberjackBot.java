@@ -3,6 +3,7 @@ import battlecode.common.*;
 
 public class LumberjackBot extends Globals
 {
+	private static boolean specialTreeIsMyTarget;
 	public static void loop()throws GameActionException
 	{
 		allies = rc.senseNearbyRobots(-1, us);
@@ -11,6 +12,7 @@ public class LumberjackBot extends Globals
 		{
 			header();
 
+			specialTreeIsMyTarget = false;
 			findMoveDirection();
 			
 			if (!(tryToStrike() || tryToChop()))
@@ -29,7 +31,14 @@ public class LumberjackBot extends Globals
 					}
 				}
 			}
-			
+			else if (specialTreeIsMyTarget)
+			{
+				tryToMove(movingDirection);
+			}
+			else
+			{
+				wander();
+			}
 			footer();
 		}
 	}
@@ -59,6 +68,7 @@ public class LumberjackBot extends Globals
 		if (lumberjackTarget != -1)
 		{
 			movingDirection = here.directionTo(lumberjackTargetLocation);
+			specialTreeIsMyTarget = true;
 		}
 	}
 	
