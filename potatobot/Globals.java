@@ -568,7 +568,7 @@ public class Globals
 		{
 			Direction bulletDirection = sensedBullet.getDir();
 			MapLocation bulletLocation = sensedBullet.getLocation();
-			rc.setIndicatorLine(bulletLocation, bulletLocation.add(bulletDirection, 2.5f), 0, 0, 255);
+			// rc.setIndicatorLine(bulletLocation, bulletLocation.add(bulletDirection, 2.5f), 0, 0, 255);
 			if (willHitRobot(me, bulletDirection, bulletLocation) && (sensedBullet.getSpeed()) >= (bulletLocation.distanceTo(here) - myType.bodyRadius))
 			{
 				if (sideStep(bulletDirection))
@@ -671,12 +671,12 @@ public class Globals
 	
 	public static boolean tryTriadShot(RobotInfo enemy)throws GameActionException
 	{
-		Direction[] shotDirections = new Direction[]{null,here.directionTo(enemy.getLocation()),null}; //left,centre,right
+		Direction[] shotDirections = {null,here.directionTo(enemy.getLocation()),null}; //left,centre,right
 		shotDirections[0] = shotDirections[1].rotateLeftDegrees(GameConstants.TRIAD_SPREAD_DEGREES);
 		shotDirections[2] = shotDirections[1].rotateRightDegrees(GameConstants.TRIAD_SPREAD_DEGREES);
 		
-		RobotInfo[] RobotHit = new RobotInfo[]{null,enemy,null}; // left,centre,right
-		boolean[] friendHit = new boolean[]{false,false,false}; // left,centre,right
+		RobotInfo[] RobotHit = {null,enemy,null}; // left,centre,right
+		boolean[] friendHit = {false,false,false}; // left,centre,right
 		
 		if (rc.canFireTriadShot())
 		{
@@ -703,11 +703,11 @@ public class Globals
 					//hitting ally not enemy
 					friendHit[1]=true;
 				}
-				if(willHitRobot(ally,shotDirections[0],here) && ally.getLocation().distanceTo(here) < RobotHit[0].getLocation().distanceTo(here)){
+				if(willHitRobot(ally,shotDirections[0],here) && RobotHit[0] != null && ally.getLocation().distanceTo(here) < RobotHit[0].getLocation().distanceTo(here)){
 					//hitting ally not enemy
 					friendHit[0]=true;
 				}
-				if(willHitRobot(ally,shotDirections[2],here) && ally.getLocation().distanceTo(here) < RobotHit[2].getLocation().distanceTo(here)){
+				if(willHitRobot(ally,shotDirections[2],here) && RobotHit[2] != null && ally.getLocation().distanceTo(here) < RobotHit[2].getLocation().distanceTo(here)){
 					//hitting ally not enemy
 					friendHit[2]=true;
 				}
@@ -724,14 +724,14 @@ public class Globals
 	
 	public static boolean tryPentadShot(RobotInfo enemy)throws GameActionException
 	{	// all arrays are leftmost to rightmost. So, [2] is the centreDirection|Bot 
-		Direction[] shotDirections = new Direction[]{null,null,here.directionTo(enemy.getLocation()),null,null};
+		Direction[] shotDirections = {null,null,here.directionTo(enemy.getLocation()),null,null};
 		shotDirections[1] = shotDirections[2].rotateLeftDegrees(GameConstants.PENTAD_SPREAD_DEGREES);
 		shotDirections[0] = shotDirections[1].rotateLeftDegrees(GameConstants.PENTAD_SPREAD_DEGREES);
 		shotDirections[3] = shotDirections[2].rotateRightDegrees(GameConstants.PENTAD_SPREAD_DEGREES);
 		shotDirections[4] = shotDirections[3].rotateRightDegrees(GameConstants.PENTAD_SPREAD_DEGREES);
 		
-		RobotInfo[] RobotHit = new RobotInfo[]{null,null,enemy,null,null};
-		boolean[] friendHit = new boolean[]{false,false,false,false,false};
+		RobotInfo[] RobotHit = {null,null,enemy,null,null};
+		boolean[] friendHit = {false,false,false,false,false};
 		
 		if (rc.canFirePentadShot()){
 			
@@ -745,7 +745,7 @@ public class Globals
 			//Now check for allies in between
 			for(RobotInfo ally:allies){
 				for(int i=0;i<5;i++){
-					if(willHitRobot(ally,shotDirections[i],here) && ally.getLocation().distanceTo(here) < RobotHit[i].getLocation().distanceTo(here)){
+					if(willHitRobot(ally,shotDirections[i],here) && RobotHit[i] != null && ally.getLocation().distanceTo(here) < RobotHit[i].getLocation().distanceTo(here)){
 						friendHit[i] = true;
 					}
 				}

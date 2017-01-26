@@ -209,7 +209,7 @@ public class GardenerBot extends Globals
 		
 		// Replace stupidCondition with some other condition
 		
-		boolean stupidConditionForLumberjacks = lumberjacks * 2 <= scouts * 3;
+		boolean stupidConditionForLumberjacks = lumberjacks <= scouts * 2;
 		if (stupidConditionForLumberjacks && lumberjacks < 20)
 		{
 			if (rc.hasRobotBuildRequirements(RobotType.LUMBERJACK))
@@ -218,7 +218,7 @@ public class GardenerBot extends Globals
 			}
 		}
 
-		boolean stupidConditionForSoldiers = (soldiers * 2 < farmers * 3);
+		boolean stupidConditionForSoldiers = (soldiers < farmers * 2);
 		if (stupidConditionForSoldiers && soldiers < 25)
 		{
 			if (rc.hasRobotBuildRequirements(RobotType.SOLDIER))

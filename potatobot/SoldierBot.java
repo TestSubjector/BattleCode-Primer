@@ -129,7 +129,6 @@ public class SoldierBot extends Globals
 					}
 				}
 			}
-			rc.setIndicatorLine(here, here.add(movingDirection, closestFarmDistance), 255, 0, 0);
 			// movingDirection decided, now tryToMove
 			if (!tryToMove(movingDirection))
 			{
@@ -175,14 +174,14 @@ public class SoldierBot extends Globals
 	
 	public static boolean shootClosestEnemy()throws GameActionException
 	{
-		if (here.distanceTo(enemies[0].getLocation()) <= 4 || (enemies.length > 4 && enemies.length * 3 > allies.length * 2))
+		if (enemies.length != 0 && (here.distanceTo(enemies[0].getLocation()) <= 4 || (enemies.length > 4 && enemies.length * 3 > allies.length * 2)))
 		{
 			if (tryPentadShot(enemies[0]))
 			{
 				return true;
 			}
 		}
-		else if (here.distanceTo(enemies[0].getLocation()) <= 6 || (enemies.length > 3 && enemies.length * 3 > allies.length * 2))
+		else if (enemies.length != 0 && (here.distanceTo(enemies[0].getLocation()) <= 6 || (enemies.length > 3 && enemies.length * 3 > allies.length * 2)))
 		{
 			if (tryTriadShot(enemies[0]))
 			{
