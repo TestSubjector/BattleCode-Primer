@@ -98,31 +98,31 @@ public class TankBot extends Globals
 		}
 	}
 	
-	private static void shootClosestEnemy()throws GameActionException 
+	private static boolean shootClosestEnemy()throws GameActionException 
 	{
-		for (RobotInfo enemy : enemies)
-		{
+		for(RobotInfo enemy:enemies){
 			if (here.distanceTo(enemy.getLocation()) <= 5 || (enemies.length > 4 && enemies.length * 3 > allies.length * 2))
 			{
 				if (tryPentadShot(enemy))
 				{
-					break;
+					return true;
 				}
 			}
 			else if (here.distanceTo(enemy.getLocation()) <= 7 || (enemies.length > 3 && enemies.length * 3 > allies.length * 2))
 			{
 				if (tryTriadShot(enemy))
 				{
-					break;
+					return true;
 				}
 			}
 			else
 			{
-				if (trySingleShot(enemy))
-				{
-					break;
-				}
+					if (trySingleShot(enemy))
+					{
+						return true;
+					}
 			}
 		}
+		return false;
 	}
 }
