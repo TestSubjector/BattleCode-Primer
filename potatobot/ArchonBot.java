@@ -8,7 +8,13 @@ public class ArchonBot extends Globals
 		while (true)
 		{
 			header();
-			
+			/* Count of each type of robot, for debugging purposes
+			for (int i = 0; i <= 7; i++)
+			{
+				System.out.print(robotCount[i] + " ");
+			}
+			System.out.println();
+			*/
 			// Use TreeDensity after Akhil is done with the maths
 			if (bullets > 151 && (soldiers >= 1 || gardeners < 1))
 			{

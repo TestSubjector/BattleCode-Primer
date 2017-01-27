@@ -92,10 +92,16 @@ public class LumberjackBot extends Globals
 	{
 		if (importantTreeTarget != -1)
 		{
+			
 			if (rc.canInteractWithTree(importantTreeTarget))
 			{
+				RobotType botInside = rc.senseTree(importantTreeTarget).getContainedRobot();
 				rc.chop(importantTreeTarget);
-				
+				if (!rc.canInteractWithTree(importantTreeTarget))
+				{
+					int botsAlready = robotCount[botInside.ordinal()];
+					rc.broadcast(botInside.ordinal(), botsAlready + 1);
+				}
 				return true;
 			}
 			else if (rc.canSenseLocation(importantTreeTargetLocation))
