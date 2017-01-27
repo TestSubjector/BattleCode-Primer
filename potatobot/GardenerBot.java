@@ -250,8 +250,9 @@ public class GardenerBot extends Globals
 		{
 			if (type == RobotType.LUMBERJACK)
 			{
-				for (TreeInfo tree : neutralTrees)
-				{
+				int loopLength = neutralTrees.length;
+				for (int i=0;i<loopLength;i++)
+				{	TreeInfo tree = neutralTrees[i];
 					Direction buildDirection = here.directionTo(tree.getLocation());
 					if (rc.canBuildRobot(type, buildDirection))
 					{
@@ -360,8 +361,9 @@ public class GardenerBot extends Globals
         if(rc.canWater()) 
         {
             TreeInfo[] nearbyTrees = rc.senseNearbyTrees();
-            for (TreeInfo tree : nearbyTrees)
-            {
+            int loopLength = nearbyTrees.length;
+			for (int i=0;i<loopLength;i++)
+			{	TreeInfo tree = nearbyTrees[i];
                 if(tree.getHealth() < GameConstants.BULLET_TREE_MAX_HEALTH - GameConstants.WATER_HEALTH_REGEN_RATE) 
                 {
                     if (rc.canWater(tree.getID())) 

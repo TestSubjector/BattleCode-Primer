@@ -34,8 +34,10 @@ public class TankBot extends Globals
 						if (rc.canFireSingleShot())
 						{
 							boolean killingFriend = false;
-							for (RobotInfo ally : allies)
+							int loopLength = allies.length;
+							for(int i = 0; i<loopLength;i++)
 							{
+								RobotInfo ally = allies[i];
 								if (willHitRobot(ally, shotDirection, here) && ally.getLocation().distanceTo(here) < closestTreeLocation.distanceTo(here))
 								{
 									killingFriend = true;
@@ -142,8 +144,10 @@ public class TankBot extends Globals
 		{
 			return true;
 		}
-		for (RobotInfo enemy : enemies)
+		int loopLength = enemies.length;
+		for(int i = 0; i<loopLength;i++)
 		{
+			RobotInfo enemy = enemies[i];
 			if (trySingleShot(enemy))
 			{
 				return true;

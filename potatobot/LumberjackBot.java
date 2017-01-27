@@ -66,8 +66,11 @@ public class LumberjackBot extends Globals
 		RobotInfo[] allRobots = rc.senseNearbyRobots(2.1f);
 		int alliesInRangeOfStrike = 0;
 		int enemiesInRangeOfStrike = 0;
-		for (RobotInfo robot : allRobots)
+		
+		int loopLength = allRobots.length;
+		for (int i = 0; i < loopLength; i++)
 		{
+			RobotInfo robot = allRobots[i];
 			if (robot.getTeam() == us && robot.getType() != RobotType.SCOUT)
 			{
 				// We don't care about our scouts

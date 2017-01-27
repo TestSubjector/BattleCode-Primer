@@ -376,8 +376,10 @@ public class Globals
 				}
 			}
 		}
-		for (RobotInfo enemy : enemies)
+		int loopLength = enemies.length;
+		for(int i = 0; i<loopLength;i++)
 		{
+			RobotInfo enemy = enemies[i];
 			int ID = enemy.getID();
 			if (enemy.getType() == RobotType.GARDENER)
 			{
@@ -463,9 +465,10 @@ public class Globals
 				}
 			}
 		}
-
-		for (TreeInfo tree : neutralTrees)
+		int loopLength = neutralTrees.length;
+		for(int i = 0; i<loopLength;i++)
 		{
+			TreeInfo tree = neutralTrees[i];
 			float r = tree.getRadius();
 			float area = (float)Math.PI * r * r;
 			nonAllyTreeArea += area;
@@ -503,9 +506,10 @@ public class Globals
 				}
 			}
 		}
-		
-		for (TreeInfo tree : enemyTrees)
+		loopLength = enemyTrees.length;
+		for(int i = 0; i<loopLength;i++)
 		{
+			TreeInfo tree = enemyTrees[i];
 			float r = tree.getRadius();
 			float area = (float)Math.PI * r * r;
 			nonAllyTreeArea += area;
@@ -523,8 +527,10 @@ public class Globals
 		{
 			return false;
 		}
-		for (int angle: tryAngles)
+		int loopLength = tryAngles.length;
+		for(int i = 0; i<loopLength;i++)
 		{
+			int angle = tryAngles[i];
 			Direction candidateDirection = movingDirection.rotateLeftDegrees(angle);
 			if (rc.canMove(candidateDirection))
 			{
@@ -550,8 +556,10 @@ public class Globals
 		{
 			return false;
 		}
-		for (int angle: tryAngles)
+		int loopLength = tryAngles.length;
+		for(int i = 0; i<loopLength;i++)
 		{
+			int angle = tryAngles[i];
 			Direction candidateDirection = movingDirection.rotateLeftDegrees(angle);
 			if (rc.canMove(candidateDirection, distance))
 			{
@@ -608,8 +616,10 @@ public class Globals
 	{
 		if (!(myType == RobotType.LUMBERJACK))
 		{
-			for (RobotInfo enemy : enemies)
+			int loopLength = enemies.length;
+			for(int i = 0; i<loopLength;i++)
 			{
+				RobotInfo enemy = enemies[i];
 				RobotType enemyType = enemy.getType();
 				MapLocation enemyLocation = enemy.getLocation();
 				if (enemyType == RobotType.LUMBERJACK && here.distanceTo(enemyLocation) - myType.bodyRadius < 3.5f)
@@ -620,8 +630,10 @@ public class Globals
 			}
 		}
 		RobotInfo me = new RobotInfo(myID, us, myType, here, rc.getHealth(), rc.getAttackCount(), rc.getMoveCount());
-		for (BulletInfo sensedBullet : sensedBullets)
+		int loopLength = sensedBullets.length;
+		for(int i = 0; i<loopLength;i++)
 		{
+			BulletInfo sensedBullet = sensedBullets[i];
 			Direction bulletDirection = sensedBullet.getDir();
 			MapLocation bulletLocation = sensedBullet.getLocation();
 			// rc.setIndicatorLine(bulletLocation, bulletLocation.add(bulletDirection, 2.5f), 0, 0, 255);
@@ -675,8 +687,10 @@ public class Globals
 			// Direction shotDirection = directionToCentre;
 			// rc.setIndicatorLine(here, enemy.getLocation(), 0, 255, 0);
 			boolean killingFriend = false;
-			for (RobotInfo ally : allies)
+			int loopLength = allies.length;
+			for(int i = 0; i<loopLength;i++)
 			{
+				RobotInfo ally = allies[i];
 				if (willHitRobot(ally, directionToCentre, here) && ally.getLocation().distanceTo(here) < enemy.getLocation().distanceTo(here))
 				{
 					killingFriend = true;
@@ -742,7 +756,10 @@ public class Globals
 				rc.fireTriadShot(shotDirections[1]);
 				return true;
 			}
-			for(RobotInfo foe : enemies){
+			int loopLength = enemies.length;
+			for(int i = 0; i<loopLength;i++)
+			{
+				RobotInfo foe = enemies[i];
 				if(willHitRobot(foe,shotDirections[0],here) && RobotHit[0]==null){
 					//since 'enemies' array is ordered closest to farthest, the first assignment to
 					//leftHit will be one it actually hits
@@ -754,7 +771,10 @@ public class Globals
 				}
 			}
 			//Now check for allies in between
-			for(RobotInfo ally:allies){
+			loopLength = allies.length;
+			for(int i = 0; i<loopLength;i++)
+			{
+				RobotInfo ally = allies[i];
 				if(willHitRobot(ally,shotDirections[1],here) && ally.getLocation().distanceTo(here) < RobotHit[1].getLocation().distanceTo(here)){
 					//hitting ally not enemy
 					friendHit[1]=true;
@@ -791,7 +811,10 @@ public class Globals
 		
 		if (rc.canFirePentadShot()){
 			
-			for(RobotInfo foe : enemies){
+			int loopLength = enemies.length;
+			for(int j = 0; j<loopLength;j++)
+			{
+				RobotInfo foe = enemies[j];
 				for(int i=0;i<5;i++){
 					if(willHitRobot(foe,shotDirections[i],here) && RobotHit[i]==null){
 						RobotHit[i] = foe;
@@ -799,7 +822,10 @@ public class Globals
 				}
 			}
 			//Now check for allies in between
-			for(RobotInfo ally:allies){
+			loopLength = allies.length;
+			for(int j = 0; j<loopLength;j++)
+			{
+				RobotInfo ally = allies[j];
 				for(int i=0;i<5;i++){
 					if(willHitRobot(ally,shotDirections[i],here) && RobotHit[i] != null && ally.getLocation().distanceTo(here) < RobotHit[i].getLocation().distanceTo(here)){
 						friendHit[i] = true;
