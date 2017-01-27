@@ -36,12 +36,10 @@ public class GardenerBot extends Globals
 			header();
 			if (amFirstGardener)
 			{
-				System.out.println(typeToSpawnFirst);
 				if (typeToSpawnFirst != null && spawn(typeToSpawnFirst))
 				{
 					if (typeToSpawnFirst.equals(RobotType.SCOUT))
 					{
-						System.out.println(neutralTrees.length);
 						if (neutralTrees.length > 5)
 						{
 							typeToSpawnFirst = RobotType.LUMBERJACK;
@@ -65,7 +63,7 @@ public class GardenerBot extends Globals
 				{
 					tryToPlantUnplanned();
 				}
-				else if (typeToSpawnFirst == null)
+				if (typeToSpawnFirst == null)
 				{
 					amFirstGardener = false;
 				}

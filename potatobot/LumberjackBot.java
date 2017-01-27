@@ -3,22 +3,20 @@ import battlecode.common.*;
 
 public class LumberjackBot extends Globals
 {
-	private static boolean specialTreeIsMyTarget;
 	public static void loop()throws GameActionException
 	{
-		allies = rc.senseNearbyRobots(-1, us);
-		movingDirection = allies[0].getLocation().directionTo(here);
+		movingDirection = randomDirection();
 		while (true)
 		{
 			header();
 
-			specialTreeIsMyTarget = false;
 			findMoveDirection();
 			
 			if (!(tryToStrike() || tryToChop()))
 			{
 				if (!tryToMove(movingDirection))
 				{
+					// Replace with pathing later
 					float angle = ((float)Math.random() * 90f);
 					double choice = Math.random();
 					if (choice > 0.5)
@@ -30,14 +28,6 @@ public class LumberjackBot extends Globals
 						movingDirection = movingDirection.opposite().rotateRightDegrees(angle);
 					}
 				}
-			}
-			else if (specialTreeIsMyTarget)
-			{
-				tryToMove(movingDirection);
-			}
-			else
-			{
-				wander();
 			}
 			footer();
 		}
@@ -55,20 +45,19 @@ public class LumberjackBot extends Globals
 			TreeInfo closestEnemyTree = enemyTrees[0];
 			movingDirection = here.directionTo(closestEnemyTree.getLocation());
 		}
-		for (RobotInfo enemy : enemies)
+		if (enemies.length != 0)
 		{
-			RobotType enemyType = enemy.getType();
-			MapLocation enemyLocation = enemy.getLocation();
-			if (!(enemyType == RobotType.SOLDIER || enemyType == RobotType.TANK))
+			RobotType enemyType = enemies[0].getType();
+			MapLocation enemyLocation = enemies[0].getLocation();
+			movingDirection = here.directionTo(enemyLocation);
+			if (enemyType == RobotType.SOLDIER || enemyType == RobotType.TANK)
 			{
-				movingDirection = here.directionTo(enemyLocation);
-				break;
+				movingDirection = movingDirection.opposite();
 			}
 		}
-		if (lumberjackTarget != -1)
+		if (importantTreeTarget != -1)
 		{
-			movingDirection = here.directionTo(lumberjackTargetLocation);
-			specialTreeIsMyTarget = true;
+			movingDirection = here.directionTo(importantTreeTargetLocation);
 		}
 	}
 	
@@ -79,8 +68,10 @@ public class LumberjackBot extends Globals
 		int enemiesInRangeOfStrike = 0;
 		for (RobotInfo robot : allRobots)
 		{
-			if (robot.getTeam() == us)
+			if (robot.getTeam() == us && robot.getType() != RobotType.SCOUT)
 			{
+				// We don't care about our scouts
+				// Devs y u nerf
 				alliesInRangeOfStrike++;
 			}
 			else
@@ -99,39 +90,35 @@ public class LumberjackBot extends Globals
 
 	private static boolean tryToChop()throws GameActionException 
 	{
-		boolean returnValue = false;
-		if (lumberjackTarget != -1)
+		if (importantTreeTarget != -1)
 		{
-			if (rc.canInteractWithTree(lumberjackTarget))
+			if (rc.canInteractWithTree(importantTreeTarget))
 			{
-				rc.chop(lumberjackTarget);
-				if (!rc.canInteractWithTree(lumberjackTarget))
-				{
-					lumberjackTarget = -1;
-				}
-				returnValue = true;
+				rc.chop(importantTreeTarget);
+				
+				return true;
 			}
-			else if (rc.canSenseLocation(lumberjackTargetLocation))
+			else if (rc.canSenseLocation(importantTreeTargetLocation))
 			{
-				lumberjackTarget = -1;
+				importantTreeTarget = -1;
 			}
 		}
-		if (!returnValue && enemyTrees.length != 0)
+		if (enemyTrees.length != 0)
 		{
 			if (enemyTrees.length != 0 && rc.canChop(enemyTrees[0].getID()))
 			{
 				rc.chop(enemyTrees[0].getID());
-				returnValue = true;
+				return true;
 			}
 		}
-		if (!returnValue && neutralTrees.length != 0)
+		if (neutralTrees.length != 0)
 		{
 			if (neutralTrees.length != 0 && rc.canChop(neutralTrees[0].getID()))
 			{
 				rc.chop(neutralTrees[0].getID());
-				returnValue = true;
+				return true;
 			}
 		}
-		return returnValue;
+		return false;
 	}
 }
