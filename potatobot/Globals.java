@@ -68,7 +68,9 @@ public class Globals
 	public static int[] IMPORTANT_TREES_CHANNELS;
 	/* The important trees channels represent:
 	 * 100 = Number of important trees seen
-	 * {101, 102} - {599, 600} = {ID of nth detected important tree, (hashed) location of the nth detected tree}
+	 * {101, 102} - {119, 120} = {ID of nth detected important tree, (hashed) location of the nth detected tree}
+	 * {121, 122} = Buffer Channels
+	 * 123 = first 0 location
 	 */
 	
 	public static int[] FARM_LOCATIONS_CHANNELS;
@@ -115,7 +117,7 @@ public class Globals
 		enemyTarget = -1;
 		enemyTargetLocation = null;
 		enemyTargetDistance = 5000000f;
-		importantTreeTarget = -1;
+		importantTreeTarget = 0;
 		importantTreeTargetLocation = null;
 		importantTreeTargetDistance = 5000000f;
 		initTryAngles();
@@ -148,7 +150,7 @@ public class Globals
 	
 	public static void initChannels()
 	{
-		ENEMY_GARDENERS_CHANNELS = new int[203];
+		ENEMY_GARDENERS_CHANNELS = new int[202];
 		for (int i = 700; i <= 901; i++)
 		{
 			ENEMY_GARDENERS_CHANNELS[i - 700] = i;
@@ -163,8 +165,8 @@ public class Globals
 		{
 			FARM_LOCATIONS_CHANNELS[i - 666] = i;
 		}
-		IMPORTANT_TREES_CHANNELS = new int[501];
-		for (int i = 100; i <= 500; i++)
+		IMPORTANT_TREES_CHANNELS = new int[24];
+		for (int i = 100; i <= 123; i++)
 		{
 			IMPORTANT_TREES_CHANNELS[i - 100] = i;
 		}
@@ -438,17 +440,20 @@ public class Globals
 	
 	public static void updateTrees()throws GameActionException
 	{
-		int numberOfTreesFound = rc.readBroadcast(IMPORTANT_TREES_CHANNELS[0]);
-		int[][] treesRead = new int[numberOfTreesFound][2];
+		System.out.println("Update Trees : ");
+		System.out.println(Clock.getBytecodesLeft());
+		int[] treesRead = new int[10];
 		int numberOfTreesRead = 0;
-		for (int i = 1; i < numberOfTreesFound * 2; i += 2)
+		boolean found = false;
+		for (int i = 1; i < 20; i += 2)
 		{
+			System.out.println("start of reading broadcasts : " + Clock.getBytecodesLeft());
 			int readID = rc.readBroadcast(IMPORTANT_TREES_CHANNELS[i]);
 			int hashedLocation = rc.readBroadcast(IMPORTANT_TREES_CHANNELS[i + 1]);
-			if (hashedLocation != -1)
+			if (hashedLocation != 0)
 			{
 				MapLocation unhashedLocation = unhashIt(hashedLocation);
-				if (myType == RobotType.LUMBERJACK && (importantTreeTarget == -1 || here.distanceTo(unhashedLocation) < importantTreeTargetDistance))
+				if (myType == RobotType.LUMBERJACK && (importantTreeTarget == 0 || here.distanceTo(unhashedLocation) < importantTreeTargetDistance))
 				{
 					importantTreeTarget = readID;
 					importantTreeTargetLocation = unhashedLocation;
@@ -456,18 +461,31 @@ public class Globals
 				}
 				if (rc.canSenseLocation(unhashedLocation) && !rc.canSenseTree(readID))
 				{
-					rc.broadcast(IMPORTANT_TREES_CHANNELS[i + 1], -1);
+					rc.broadcast(IMPORTANT_TREES_CHANNELS[i + 1], 0);
+					if (importantTreeTarget == readID)
+					{
+						importantTreeTarget = -1;
+						importantTreeTargetDistance = 500000f;
+					}
 				}
 				else
 				{
-					treesRead[numberOfTreesRead][0] = readID;
-					treesRead[numberOfTreesRead++][1] = i;
+					treesRead[numberOfTreesRead] = readID;
 				}
 			}
+			else if (!found)
+			{
+				found = true;
+				int impChannelLength = IMPORTANT_TREES_CHANNELS.length;
+				rc.broadcast(IMPORTANT_TREES_CHANNELS[impChannelLength - 1], i);
+			}
+			System.out.println("end of reading broadcasts : " + Clock.getBytecodesLeft());
 		}
-		int loopLength = neutralTrees.length;
-		for(int i = 0; i<loopLength;i++)
+		
+		int limit = Math.min(neutralTrees.length, 30);
+		for(int i = 0; i < limit; i++)
 		{
+			System.out.println("start of scanning nearby tree : " + Clock.getBytecodesLeft());
 			TreeInfo tree = neutralTrees[i];
 			float r = tree.getRadius();
 			float area = (float)Math.PI * r * r;
@@ -476,46 +494,50 @@ public class Globals
 			int treeID = tree.getID();
 			if (tree.getContainedBullets() > 0)
 			{
-				if (rc.canShake(tree.getID()))
+				if (rc.canShake(treeID))
 				{
-					rc.shake(tree.getID());
+					rc.shake(treeID);
 				}
 			}
 			if (tree.getContainedRobot() != null)
 			{
-				if (numberOfTreesFound < 250)
+				found = false;
+				int j;
+				for (j = 0; j < numberOfTreesRead; j++)
 				{
-					boolean found = false;
-					int j;
-					for (j = 0; j < numberOfTreesRead; j++)
+					if (treesRead[j] == treeID)
 					{
-						if (treesRead[j][0] == treeID)
-						{
-							found = true;
-							break;
-						}
-					}
-					if (!found)
-					{
-						int hashedLocation = hashIt(treeLocation);
-						rc.broadcast(IMPORTANT_TREES_CHANNELS[numberOfTreesFound * 2 + 1], treeID);
-						rc.broadcast(IMPORTANT_TREES_CHANNELS[numberOfTreesFound * 2 + 2], hashedLocation);
-						numberOfTreesFound++;
-						rc.broadcast(IMPORTANT_TREES_CHANNELS[0], numberOfTreesFound);
+						found = true;
+						break;
 					}
 				}
+				if (!found)
+				{
+					int hashedLocation = hashIt(treeLocation);
+					int impChannelLength = IMPORTANT_TREES_CHANNELS.length;
+					int index = rc.readBroadcast(IMPORTANT_TREES_CHANNELS[impChannelLength - 1]);
+					if (index == 21)
+					{
+						System.out.println("Lite");
+					}
+					rc.broadcast(IMPORTANT_TREES_CHANNELS[index], treeID);
+					rc.broadcast(IMPORTANT_TREES_CHANNELS[index + 1], hashedLocation);
+					rc.broadcast(IMPORTANT_TREES_CHANNELS[impChannelLength - 1], 21);
+				}
 			}
+			System.out.println("end of scanning nearby tree : " + Clock.getBytecodesLeft());
 		}
-		loopLength = enemyTrees.length;
-		for(int i = 0; i<loopLength;i++)
+		int loopLength = enemyTrees.length;
+		for(int i = 0; i < loopLength; i++)
 		{
 			TreeInfo tree = enemyTrees[i];
 			float r = tree.getRadius();
 			float area = (float)Math.PI * r * r;
 			nonAllyTreeArea += area;
 		}
+
+		System.out.println("end of updateTrees : " + Clock.getBytecodesLeft());
 	}
-	
 	// Updation functions end here
 	
 	

@@ -43,17 +43,11 @@ public class LumberjackBot extends Globals
 	
 	private static void findMoveDirection()throws GameActionException
 	{
-		if (neutralTrees.length != 0)
+		if (importantTreeTarget != 0)
 		{
-			TreeInfo closestNeutralTree = neutralTrees[0];
-			movingDirection = here.directionTo(closestNeutralTree.getLocation());
+			movingDirection = here.directionTo(importantTreeTargetLocation);
 		}
-		if (enemyTrees.length != 0)
-		{
-			TreeInfo closestEnemyTree = enemyTrees[0];
-			movingDirection = here.directionTo(closestEnemyTree.getLocation());
-		}
-		if (enemies.length != 0)
+		else if (enemies.length != 0)
 		{
 			RobotType enemyType = enemies[0].getType();
 			MapLocation enemyLocation = enemies[0].getLocation();
@@ -63,9 +57,16 @@ public class LumberjackBot extends Globals
 				movingDirection = movingDirection.opposite();
 			}
 		}
-		if (importantTreeTarget != -1)
+		else if (enemyTrees.length != 0)
 		{
-			movingDirection = here.directionTo(importantTreeTargetLocation);
+			TreeInfo closestEnemyTree = enemyTrees[0];
+			movingDirection = here.directionTo(closestEnemyTree.getLocation());
+		}
+		
+		else if (neutralTrees.length != 0)
+		{
+			TreeInfo closestNeutralTree = neutralTrees[0];
+			movingDirection = here.directionTo(closestNeutralTree.getLocation());
 		}
 	}
 	
@@ -99,9 +100,8 @@ public class LumberjackBot extends Globals
 
 	private static boolean tryToChop()throws GameActionException 
 	{
-		if (importantTreeTarget != -1)
+		if (importantTreeTarget != 0)
 		{
-			
 			if (rc.canInteractWithTree(importantTreeTarget))
 			{
 				RobotType botInside = rc.senseTree(importantTreeTarget).getContainedRobot();
@@ -115,7 +115,7 @@ public class LumberjackBot extends Globals
 			}
 			else if (rc.canSenseLocation(importantTreeTargetLocation))
 			{
-				importantTreeTarget = -1;
+				importantTreeTarget = 0;
 			}
 		}
 		if (enemyTrees.length != 0)

@@ -7,7 +7,6 @@ public class GardenerBot extends Globals
 	private static boolean amFirstGardener = false;
 	private static RobotType typeToSpawnFirst = RobotType.SCOUT;
 	private static Direction farmerMovingDirection = here.directionTo(theirInitialArchons[0]).rotateRightDegrees(60);
-	private static int roundILastPlanted = rc.getRoundNum();
 	
 	public static void loop()throws GameActionException
 	{
@@ -71,20 +70,12 @@ public class GardenerBot extends Globals
 				}
 				else if (amFarmer)
 				{
-					if (treesIPlanted < 7 && roundNum - roundILastPlanted < 70)
+					tryToMove(farmerMovingDirection);
+					moveNumber = (moveNumber + 1) % 16;
+					if (moveNumber % 2 == 0)
 					{
-						tryToMove(farmerMovingDirection);
-						moveNumber = (moveNumber + 1) % 16;
-						if (moveNumber % 2 == 0)
-						{
-							tryToPlantUnplanned();
-							farmerMovingDirection = farmerMovingDirection.rotateLeftDegrees(51.43f);
-						}
-					}
-					else
-					{
-						tryToMove(farmerMovingDirection);
-						farmerMovingDirection = farmerMovingDirection.rotateLeftDegrees(25.7f);
+						tryToPlantUnplanned();
+						farmerMovingDirection = farmerMovingDirection.rotateLeftDegrees(51.43f);
 					}
 					System.out.println("After Unplanned Planting : " + Clock.getBytecodesLeft());
 				}
@@ -149,7 +140,6 @@ public class GardenerBot extends Globals
 			{
             	rc.plantTree(plantDirection);
                 treesIPlanted++;
-                roundILastPlanted = roundNum;
                 updateTreeCount();
                 rc.broadcast(TREE_CHANNEL, treesPlanted + 1);
                 return true;
