@@ -66,18 +66,31 @@ public class ScoutBot extends Globals
 			RobotInfo enemy = enemies[0];
 			RobotType enemyType = enemy.getType();
 			MapLocation enemyLocation = enemy.getLocation();
-	
-			if (!(enemyType == RobotType.SOLDIER || enemyType == RobotType.TANK))
+			movingDirection = here.directionTo(enemyLocation);
+			if ((enemyType == RobotType.SOLDIER || enemyType == RobotType.TANK || enemyType == RobotType.ARCHON))
 			{
-				movingDirection = here.directionTo(enemyLocation);
+				float angle = 45;
+				double choice = Math.random();
+				if (choice > 0.5)
+				{
+					movingDirection = movingDirection.opposite().rotateLeftDegrees(angle);
+				}
+				else
+				{
+					movingDirection = movingDirection.opposite().rotateRightDegrees(angle);
+				}
 			}
-			else if (enemyType == RobotType.LUMBERJACK && here.distanceTo(enemyLocation) - myType.bodyRadius < 3.5f)
+		}
+		else if (enemyTarget != -1)
+		{
+			if (rc.canSenseLocation(enemyTargetLocation) && !rc.canSenseRobot(enemyTarget))
 			{
-				movingDirection = enemyLocation.directionTo(here);
+				enemyTarget = -1;
+				movingDirection = randomDirection();
 			}
 			else
 			{
-				movingDirection = enemyLocation.directionTo(here);
+				movingDirection = here.directionTo(enemyTargetLocation);
 			}
 		}
 		// Check nearby neutral trees for bullets

@@ -79,10 +79,8 @@ public class LumberjackBot extends Globals
 		for (int i = 0; i < loopLength; i++)
 		{
 			RobotInfo robot = allRobots[i];
-			if (robot.getTeam() == us && robot.getType() != RobotType.SCOUT)
+			if (robot.getTeam() == us)
 			{
-				// We don't care about our scouts
-				// Devs y u nerf
 				alliesInRangeOfStrike++;
 			}
 			else
