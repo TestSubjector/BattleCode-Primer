@@ -12,56 +12,64 @@ public class TankBot extends Globals
 		}
 		while (true)
 		{
-			header();
-
-			findMoveDirection();
-			
-			// movingDirection decided, now tryToMove
-			if (!tryToMove(movingDirection))
+			try
 			{
-				patience--;
-				if (patience <= -30)
+				header();
+	
+				findMoveDirection();
+				
+				// movingDirection decided, now tryToMove
+				if (!tryToMove(movingDirection))
 				{
-					movingDirection = movingDirection.opposite();
-					patience = 10;
-				}
-				if (patience <= 0)
-				{
-					if (neutralTrees.length != 0)
+					patience--;
+					if (patience <= -30)
 					{
-						MapLocation closestTreeLocation = neutralTrees[0].getLocation();
-						Direction shotDirection = here.directionTo(closestTreeLocation);
-						if (rc.canFireSingleShot())
+						movingDirection = movingDirection.opposite();
+						patience = 10;
+					}
+					if (patience <= 0)
+					{
+						if (neutralTrees.length != 0)
 						{
-							boolean killingFriend = false;
-							int loopLength = allies.length;
-							for(int i = 0; i<loopLength;i++)
+							MapLocation closestTreeLocation = neutralTrees[0].getLocation();
+							Direction shotDirection = here.directionTo(closestTreeLocation);
+							if (rc.canFireSingleShot())
 							{
-								RobotInfo ally = allies[i];
-								if (willHitRobot(ally, shotDirection, here) && ally.getLocation().distanceTo(here) < closestTreeLocation.distanceTo(here))
+								boolean killingFriend = false;
+								int loopLength = allies.length;
+								for(int i = 0; i<loopLength;i++)
 								{
-									killingFriend = true;
-									break;
+									RobotInfo ally = allies[i];
+									if (willHitRobot(ally, shotDirection, here) && ally.getLocation().distanceTo(here) < closestTreeLocation.distanceTo(here))
+									{
+										killingFriend = true;
+										break;
+									}
 								}
-							}
-							if (!killingFriend)
-							{
-								if (rc.canFireSingleShot())
+								if (!killingFriend)
 								{
-									rc.fireSingleShot(shotDirection);
+									if (rc.canFireSingleShot())
+									{
+										rc.fireSingleShot(shotDirection);
+									}
 								}
 							}
 						}
 					}
 				}
+				else
+				{
+					patience = 30;
+				}
+				shootClosestEnemy();
+				
+				footer();
 			}
-			else
+			catch (GameActionException e)
 			{
-				patience = 30;
+				System.out.println("Catch kiya");
+				footer();
 			}
-			shootClosestEnemy();
-			
-			footer();
 		}
 	}
 	

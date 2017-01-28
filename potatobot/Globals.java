@@ -534,17 +534,9 @@ public class Globals
 			Direction candidateDirection = movingDirection.rotateLeftDegrees(angle);
 			if (rc.canMove(candidateDirection))
 			{
-				try
-				{
-					rc.move(candidateDirection);
-					updateLocation();
-					return true;
-				}
-				catch (GameActionException e)
-				{
-					System.out.println("Catch kiya");
-					return false;
-				}
+				rc.move(candidateDirection);
+				updateLocation();
+				return true;
 			}
 		}
 		return false;
@@ -637,7 +629,7 @@ public class Globals
 			Direction bulletDirection = sensedBullet.getDir();
 			MapLocation bulletLocation = sensedBullet.getLocation();
 			// rc.setIndicatorLine(bulletLocation, bulletLocation.add(bulletDirection, 2.5f), 0, 0, 255);
-			if (willHitRobot(me, bulletDirection, bulletLocation) && (sensedBullet.getSpeed()) >= (bulletLocation.distanceTo(here) - myType.bodyRadius))
+			if (willHitRobot(me, bulletDirection, bulletLocation))
 			{
 				if (sideStep(bulletDirection))
 				{
@@ -849,20 +841,32 @@ public class Globals
 	
 	public static void header()throws GameActionException
 	{
+		System.out.println("Initial : " + Clock.getBytecodesLeft());
 		updateRoundNum();
+		System.out.println("roundNum : " + Clock.getBytecodesLeft());
 		updateBulletCount();
+		System.out.println("BulletCount : " + Clock.getBytecodesLeft());
 		doVictoryPointsCalculations();
+		System.out.println("VP : " + Clock.getBytecodesLeft());
 		updateNearbyBullets();
+		System.out.println("NearbyBullets : " + Clock.getBytecodesLeft());
 		updateRobotCount();
+		System.out.println("robotCount : " + Clock.getBytecodesLeft());
 		updateNearbyObjectLocations();
+		System.out.println("nearbyObjects : " + Clock.getBytecodesLeft());
 		tryToDodge();
+		System.out.println("dodge : " + Clock.getBytecodesLeft());
 		if (dying())
 		{
 			imDying();
 		}
+		System.out.println("dying : " + Clock.getBytecodesLeft());
 		updateEnemies();
+		System.out.println("updateEnemies : " + Clock.getBytecodesLeft());
 		updateTrees();
+		System.out.println("updateTrees : " + Clock.getBytecodesLeft());
 		updateNonAllyTreeDensity();
+		System.out.println("nonAllyTreeDensity : " + Clock.getBytecodesLeft());
 	}
 
 	// Footer to run at the end of each round

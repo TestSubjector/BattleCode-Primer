@@ -8,28 +8,36 @@ public class LumberjackBot extends Globals
 		movingDirection = randomDirection();
 		while (true)
 		{
-			header();
-
-			findMoveDirection();
-			
-			if (!(tryToStrike() || tryToChop()))
+			try
 			{
-				if (!tryToMove(movingDirection))
+				header();
+	
+				findMoveDirection();
+				
+				if (!(tryToStrike() || tryToChop()))
 				{
-					// Replace with pathing later
-					float angle = ((float)Math.random() * 90f);
-					double choice = Math.random();
-					if (choice > 0.5)
+					if (!tryToMove(movingDirection))
 					{
-						movingDirection = movingDirection.opposite().rotateLeftDegrees(angle);
-					}
-					else
-					{
-						movingDirection = movingDirection.opposite().rotateRightDegrees(angle);
+						// Replace with pathing later
+						float angle = ((float)Math.random() * 90f);
+						double choice = Math.random();
+						if (choice > 0.5)
+						{
+							movingDirection = movingDirection.opposite().rotateLeftDegrees(angle);
+						}
+						else
+						{
+							movingDirection = movingDirection.opposite().rotateRightDegrees(angle);
+						}
 					}
 				}
+				footer();
 			}
-			footer();
+			catch (GameActionException e)
+			{
+				System.out.println("Catch kiya");
+				footer();
+			}
 		}
 	}
 	

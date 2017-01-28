@@ -9,27 +9,37 @@ public class ScoutBot extends Globals
 		movingDirection = here.directionTo(theirInitialArchons[0]);
 		while (true)
 		{
-			header();
-
-			findMoveDirection();
-			
-			// movingDirection decided, now tryToMove
-			if (!tryToMove(movingDirection))
+			try
 			{
-				float angle = ((float)Math.random() * 90f);
-				double choice = Math.random();
-				if (choice > 0.5)
+				header();
+				System.out.println("After header : " + Clock.getBytecodesLeft());
+				findMoveDirection();
+				System.out.println("After moveDirection : " + Clock.getBytecodesLeft());
+				
+				// movingDirection decided, now tryToMove
+				if (!tryToMove(movingDirection))
 				{
-					movingDirection = movingDirection.opposite().rotateLeftDegrees(angle);
+					float angle = ((float)Math.random() * 90f);
+					double choice = Math.random();
+					if (choice > 0.5)
+					{
+						movingDirection = movingDirection.opposite().rotateLeftDegrees(angle);
+					}
+					else
+					{
+						movingDirection = movingDirection.opposite().rotateRightDegrees(angle);
+					}
 				}
-				else
-				{
-					movingDirection = movingDirection.opposite().rotateRightDegrees(angle);
-				}
+				System.out.println("After tryToMove : " + Clock.getBytecodesLeft());
+				shootClosestEnemy();
+				System.out.println("After shootClosestEnemy : " + Clock.getBytecodesLeft());
+				footer();
 			}
-			shootClosestEnemy();
-			
-			footer();
+			catch (GameActionException e)
+			{
+				System.out.println("Catch kiya");
+				footer();
+			}
 		}
 	}
 
@@ -51,36 +61,28 @@ public class ScoutBot extends Globals
 
 	private static void findMoveDirection()throws GameActionException
 	{
-		//Check nearby enemies
-		int loopLength = enemies.length;
-		// i++ gives a Dead Code warning since the loop never executes completely even once
-		// if,else if,else blocks all have a break statement
-		// TODO Check if loop can be removed
-		for(int i = 0; i<loopLength;i++)
+		if (enemies.length != 0)
 		{
-			RobotInfo enemy = enemies[i];
+			RobotInfo enemy = enemies[0];
 			RobotType enemyType = enemy.getType();
 			MapLocation enemyLocation = enemy.getLocation();
-			if (enemyType == RobotType.LUMBERJACK && here.distanceTo(enemyLocation) - myType.bodyRadius < 3.5f)
-			{
-				movingDirection = enemyLocation.directionTo(here);
-				break;
-			}
-			else if (!(enemyType == RobotType.SOLDIER || enemyType == RobotType.TANK))
+	
+			if (!(enemyType == RobotType.SOLDIER || enemyType == RobotType.TANK))
 			{
 				movingDirection = here.directionTo(enemyLocation);
-				break;
+			}
+			else if (enemyType == RobotType.LUMBERJACK && here.distanceTo(enemyLocation) - myType.bodyRadius < 3.5f)
+			{
+				movingDirection = enemyLocation.directionTo(here);
 			}
 			else
 			{
 				movingDirection = enemyLocation.directionTo(here);
-				break;
 			}
 		}
-		
 		// Check nearby neutral trees for bullets
-		loopLength = neutralTrees.length;
-		for(int i = 0; i<loopLength;i++)
+		int loopLength = neutralTrees.length;
+		for(int i = 0; i< loopLength;i++)
 		{	
 			TreeInfo tree = neutralTrees[i];
 			if (tree.getContainedBullets() > 0)
