@@ -61,7 +61,15 @@ public class GardenerBot extends Globals
 						}
 						else if (typeToSpawnFirst.equals(RobotType.SOLDIER))
 						{
-							if (soldiers >= 1)
+							if (archonDistance < 35f)
+							{
+								updateRobotCount();
+								if (soldiers >= 2)
+								{
+									typeToSpawnFirst = null;
+								}
+							}
+							else
 							{
 								typeToSpawnFirst = null;
 							}
