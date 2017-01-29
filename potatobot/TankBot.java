@@ -28,7 +28,7 @@ public class TankBot extends Globals
 					patience = 30;
 				}
 				
-				shootClosestEnemy();
+				tryShot();
 				
 				footer();
 			}
@@ -108,25 +108,5 @@ public class TankBot extends Globals
 				}
 			}
 		}
-	}
-	
-	public static boolean shootClosestEnemy()throws GameActionException
-	{
-		if (enemies.length == 0)
-		{
-			return false;
-		}
-		if (tryPentadShot())
-		{
-			return true;
-		}
-		if (tryTriadShot())
-		{
-			return true;
-		}
-		if(trySingleShot()){
-			return true;
-		}
-		return false;
 	}
 }

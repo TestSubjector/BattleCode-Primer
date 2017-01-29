@@ -796,6 +796,180 @@ public class Globals
 		return false;
 	}
 	
+	public static boolean tryShot()throws GameActionException
+	{
+		Direction[] shotDirections = {null,null,null,null,null,null,null}; //Pentad0,Triad0,Pentad1,Center,Pentad3,Triad2,Pentad4
+		Target[] TargetHit = {Target.NONE,Target.NONE,Target.NONE,Target.NONE,Target.NONE,Target.NONE,Target.NONE};
+		float[] targetDist = {0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f};
+		int enemiesLen = enemies.length;
+		int alliesLen = allies.length;
+		int allyTreesLen = allyTrees.length;
+		int neutTreesLen = neutralTrees.length;
+		for(int i=0;i<enemiesLen;i++){
+			int j;
+			shotDirections[3] = here.directionTo(enemies[i].getLocation());
+			shotDirections[2] = shotDirections[3].rotateLeftDegrees(GameConstants.PENTAD_SPREAD_DEGREES);
+			shotDirections[1] = shotDirections[3].rotateLeftDegrees(GameConstants.TRIAD_SPREAD_DEGREES);
+			shotDirections[0] = shotDirections[2].rotateLeftDegrees(GameConstants.PENTAD_SPREAD_DEGREES);
+			shotDirections[4] = shotDirections[3].rotateRightDegrees(GameConstants.PENTAD_SPREAD_DEGREES);
+			shotDirections[5] = shotDirections[3].rotateRightDegrees(GameConstants.TRIAD_SPREAD_DEGREES);
+			shotDirections[6] = shotDirections[4].rotateRightDegrees(GameConstants.PENTAD_SPREAD_DEGREES);
+			
+			TargetHit[0] = Target.NONE;
+			TargetHit[1] = Target.NONE;
+			TargetHit[2] = Target.NONE;
+			TargetHit[3] = Target.ENEMY;
+			TargetHit[4] = Target.NONE;
+			TargetHit[5] = Target.NONE;
+			TargetHit[6] = Target.NONE;
+			
+			targetDist[0] = 0.0f;
+			targetDist[1] = 0.0f;
+			targetDist[2] = 0.0f;
+			targetDist[3] = enemies[i].getLocation().distanceTo(here);
+			targetDist[4] = 0.0f;
+			targetDist[5] = 0.0f;
+			targetDist[6] = 0.0f;
+			
+			for(int k=0;k<7;k++)
+			{
+				for(j=0;j<enemiesLen;j++)
+				{
+					if(willHitBody(enemies[j],shotDirections[k],here))
+					{
+						//if BodyHit[k]!=null, it means already assigned. Since arrays are closest to farthest, we can skip
+						TargetHit[k]  = Target.ENEMY;
+						BodyHit[k] = enemies[j];
+						break;
+					}
+				}
+				
+				for(j=0;j<alliesLen;j++)
+				{
+					if(willHitBody(allies[j],shotDirections[k],here) && here.distanceTo(allies[j].getLocation()) < )
+					{
+						//if BodyHit[k]!=null, it means already assigned. Since arrays are closest to farthest, we can skip
+						TargetHit[k]  = Target.ENEMY;
+						BodyHit[k] = enemies[j];
+						break;
+					}
+				}
+			}//end of other enemies collision loop
+			
+		}// end of topmost enemLoop; decides centerDir
+		return false;
+	}
+	public static boolean tryTriadShot()throws GameActionException
+	{
+		if(rc.canFireTriadShot()){
+			Direction[] shotDirections = {null,null,null};
+			Target[] TargetHit = {Target.NONE,Target.NONE,Target.NONE};
+			BodyInfo[] BodyHit = {null,null,null};
+			int enemiesLen = enemies.length;
+			int alliesLen = allies.length;
+			int allyTreesLen = allyTrees.length;
+			int neutTreesLen = neutralTrees.length;
+			// if enemiesLen is 0, all loops are skipped.
+			for(int i=0;i<enemiesLen;i++){
+				RobotInfo centerTarget = enemies[i];
+				shotDirections[1] = here.directionTo(centerTarget.getLocation());
+				shotDirections[0] = shotDirections[1].rotateLeftDegrees(GameConstants.TRIAD_SPREAD_DEGREES);
+				shotDirections[2] = shotDirections[1].rotateRightDegrees(GameConstants.TRIAD_SPREAD_DEGREES);
+				
+				TargetHit[0] = Target.NONE;
+				TargetHit[1] = Target.ENEMY;
+				TargetHit[2] = Target.NONE;
+				BodyHit[0] = null;
+				BodyHit[1] = enemies[i];
+				BodyHit[2] = null;
+				
+				for(int j=0;j<enemiesLen;j++){
+					if(willHitBody(enemies[j],shotDirections[0],here) && BodyHit[0] != null){
+						//left bullet
+						TargetHit[0]  = Target.ENEMY;
+						BodyHit[0] = enemies[j];
+					}
+					if(willHitBody(enemies[j],shotDirections[2],here) && BodyHit[2] != null){
+						//right bullet
+						TargetHit[2]  = Target.ENEMY;
+						BodyHit[2] = enemies[j];
+					}
+					if(TargetHit[0]==Target.ENEMY && TargetHit[2]==Target.ENEMY){
+						break;
+					}
+				}
+				
+				for(int j=0;j<alliesLen;j++){
+					for(int k=0;k<3;k++){
+						if(willHitBody(allies[j],shotDirections[k],here) && TargetHit[k]!=Target.ALLY){
+							if(TargetHit[k]==Target.NONE){
+								BodyHit[k] = allies[j];
+								TargetHit[k] = Target.ALLY;
+							}
+							else if(TargetHit[k]==Target.ENEMY){
+								if(allies[j].getLocation().distanceTo(here) < BodyHit[k].getLocation().distanceTo(here)){
+									BodyHit[k] = allies[j];
+									TargetHit[k] = Target.ALLY;
+								}
+							}
+						}
+					}
+					// if no TargetHit is NONE, loop can be broken
+					if(TargetHit[0]!=Target.NONE && TargetHit[1]!=Target.NONE && TargetHit[2]!=Target.NONE){
+						break;
+					}
+				}
+				
+				for(int j=0;j<allyTreesLen;j++){
+					for(int k=0;k<3;k++){
+						if(willHitBody(allyTrees[j],shotDirections[k],here) && TargetHit[k]!=Target.TREE_A){
+							if(TargetHit[k]==Target.NONE){
+								BodyHit[k] = allyTrees[j];
+								TargetHit[k] = Target.TREE_A;
+							}
+							else{
+								if(allyTrees[j].getLocation().distanceTo(here) <= BodyHit[k].getLocation().distanceTo(here)){
+									// The = is to account for scouts on trees not getting hit
+									BodyHit[k] = null;
+									TargetHit[k] = Target.TREE_A;
+								}
+							}
+						}
+					}
+				} 
+				
+				
+				for(int j=0;j<neutTreesLen;j++){
+					for(int k=0;k<3;k++){
+						if(willHitBody(neutralTrees[j],shotDirections[k],here) && TargetHit[k]!=Target.TREE_N){
+							
+							if(TargetHit[k]==Target.NONE){
+								BodyHit[k] = neutralTrees[j];
+								TargetHit[k] = Target.TREE_N;
+							}
+							else{
+								if(neutralTrees[j].getLocation().distanceTo(here) <= BodyHit[k].getLocation().distanceTo(here)){
+									BodyHit[k] = neutralTrees[j];
+									TargetHit[k] = Target.TREE_N;
+								}
+							}
+						}
+					}
+				}
+				
+				//All possible obstacles have been taken into account. Now verify
+				System.out.println("Before checking ratio #"+i+" "+Clock.getBytecodeNum());
+				if(satisfactoryRatio(TargetHit)){
+					rc.setIndicatorLine(here, here.add(shotDirections[0], 5.0f), 0, 0, 255);
+					rc.setIndicatorLine(here, here.add(shotDirections[1], 5.0f), 255, 0, 0);
+					rc.setIndicatorLine(here, here.add(shotDirections[2], 5.0f), 0, 0, 255);
+					rc.fireTriadShot(shotDirections[1]);
+					return true;
+				} //else loop over next detected enemy
+			}
+		}
+		return false;
+	}
 	public static boolean trySingleShot()throws GameActionException
 	{
 		if (rc.canFireSingleShot())
@@ -920,118 +1094,6 @@ public class Globals
 				return false;
 			}
 		}
-	}
-	
-	public static boolean tryTriadShot()throws GameActionException
-	{
-		if(rc.canFireTriadShot()){
-			Direction[] shotDirections = {null,null,null};
-			Target[] TargetHit = {Target.NONE,Target.NONE,Target.NONE};
-			BodyInfo[] BodyHit = {null,null,null};
-			int enemiesLen = enemies.length;
-			int alliesLen = allies.length;
-			int allyTreesLen = allyTrees.length;
-			int neutTreesLen = neutralTrees.length;
-			// if enemiesLen is 0, all loops are skipped.
-			for(int i=0;i<enemiesLen;i++){
-				RobotInfo centerTarget = enemies[i];
-				shotDirections[1] = here.directionTo(centerTarget.getLocation());
-				shotDirections[0] = shotDirections[1].rotateLeftDegrees(GameConstants.TRIAD_SPREAD_DEGREES);
-				shotDirections[2] = shotDirections[1].rotateRightDegrees(GameConstants.TRIAD_SPREAD_DEGREES);
-				
-				TargetHit[0] = Target.NONE;
-				TargetHit[1] = Target.ENEMY;
-				TargetHit[2] = Target.NONE;
-				BodyHit[0] = null;
-				BodyHit[1] = enemies[i];
-				BodyHit[2] = null;
-				
-				for(int j=0;j<enemiesLen;j++){
-					if(willHitBody(enemies[j],shotDirections[0],here) && BodyHit[0] != null){
-						//left bullet
-						TargetHit[0]  = Target.ENEMY;
-						BodyHit[0] = enemies[j];
-					}
-					if(willHitBody(enemies[j],shotDirections[2],here) && BodyHit[2] != null){
-						//right bullet
-						TargetHit[2]  = Target.ENEMY;
-						BodyHit[2] = enemies[j];
-					}
-					if(TargetHit[0]==Target.ENEMY && TargetHit[2]==Target.ENEMY){
-						break;
-					}
-				}
-				
-				for(int j=0;j<alliesLen;j++){
-					for(int k=0;k<3;k++){
-						if(willHitBody(allies[j],shotDirections[k],here) && TargetHit[k]!=Target.ALLY){
-							if(TargetHit[k]==Target.NONE){
-								BodyHit[k] = allies[j];
-								TargetHit[k] = Target.ALLY;
-							}
-							else if(TargetHit[k]==Target.ENEMY){
-								if(allies[j].getLocation().distanceTo(here) < BodyHit[k].getLocation().distanceTo(here)){
-									BodyHit[k] = allies[j];
-									TargetHit[k] = Target.ALLY;
-								}
-							}
-						}
-					}
-					// if no TargetHit is NONE, loop can be broken
-					if(TargetHit[0]!=Target.NONE && TargetHit[1]!=Target.NONE && TargetHit[2]!=Target.NONE){
-						break;
-					}
-				}
-				
-				for(int j=0;j<allyTreesLen;j++){
-					for(int k=0;k<3;k++){
-						if(willHitBody(allyTrees[j],shotDirections[k],here) && TargetHit[k]!=Target.TREE_A){
-							if(TargetHit[k]==Target.NONE){
-								BodyHit[k] = allyTrees[j];
-								TargetHit[k] = Target.TREE_A;
-							}
-							else{
-								if(allyTrees[j].getLocation().distanceTo(here) <= BodyHit[k].getLocation().distanceTo(here)){
-									// The = is to account for scouts on trees not getting hit
-									BodyHit[k] = null;
-									TargetHit[k] = Target.TREE_A;
-								}
-							}
-						}
-					}
-				} 
-				
-				
-				for(int j=0;j<neutTreesLen;j++){
-					for(int k=0;k<3;k++){
-						if(willHitBody(neutralTrees[j],shotDirections[k],here) && TargetHit[k]!=Target.TREE_N){
-							
-							if(TargetHit[k]==Target.NONE){
-								BodyHit[k] = neutralTrees[j];
-								TargetHit[k] = Target.TREE_N;
-							}
-							else{
-								if(neutralTrees[j].getLocation().distanceTo(here) <= BodyHit[k].getLocation().distanceTo(here)){
-									BodyHit[k] = neutralTrees[j];
-									TargetHit[k] = Target.TREE_N;
-								}
-							}
-						}
-					}
-				}
-				
-				//All possible obstacles have been taken into account. Now verify
-				System.out.println("Before checking ratio #"+i+" "+Clock.getBytecodeNum());
-				if(satisfactoryRatio(TargetHit)){
-					rc.setIndicatorLine(here, here.add(shotDirections[0], 5.0f), 0, 0, 255);
-					rc.setIndicatorLine(here, here.add(shotDirections[1], 5.0f), 255, 0, 0);
-					rc.setIndicatorLine(here, here.add(shotDirections[2], 5.0f), 0, 0, 255);
-					rc.fireTriadShot(shotDirections[1]);
-					return true;
-				} //else loop over next detected enemy
-			}
-		}
-		return false;
 	}
 	
 	public static boolean tryPentadShot()throws GameActionException

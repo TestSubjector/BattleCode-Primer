@@ -19,7 +19,7 @@ public class ScoutBot extends Globals
 				{
 					movingDirection = randomDirection();
 				}
-				shootClosestEnemy();
+				tryShot();
 				footer();
 			}
 			catch (GameActionException e)
@@ -29,17 +29,6 @@ public class ScoutBot extends Globals
 			}
 		}
 	}
-
-	private static boolean shootClosestEnemy()throws GameActionException 
-	{
-
-		// look for the closest enemy and shoot
-		if(trySingleShot()){
-			return true;
-		}
-		return false;
-	}
-	
 
 	private static void findMoveDirection()throws GameActionException
 	{
