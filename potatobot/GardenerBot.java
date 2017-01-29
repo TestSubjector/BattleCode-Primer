@@ -6,11 +6,12 @@ public class GardenerBot extends Globals
 	private static int treesIPlanted = 0;
 	private static boolean amFirstGardener = false;
 	private static RobotType typeToSpawnFirst = RobotType.SCOUT;
-	private static Direction farmerMovingDirection = here.directionTo(theirInitialArchons[0]).rotateRightDegrees(60);
-	
+	private static Direction plantDirection;
 	public static void loop()throws GameActionException
 	{
+		int spawnRoundNum = rc.getRoundNum();
 		amFarmer = shouldIBeAFarmer();
+		plantDirection = here.directionTo(theirInitialArchons[0]).rotateLeftDegrees(60);
 		if (amFarmer)
 		{
 			updateRobotCount();
@@ -23,20 +24,19 @@ public class GardenerBot extends Globals
 			rc.broadcast(FARM_LOCATIONS_CHANNELS[farmIndex + 1], hashIt(here));
 			rc.broadcast(FARM_LOCATIONS_CHANNELS[0], farmIndex + 1);
 		}
-		int moveNumber = 0;
 		while (true)
 		{
 			try
 			{
 				header();
+
+				BodyInfo[][] array = {enemies, allies, neutralTrees, enemyTrees, allyTrees};
+				Direction awayFromNearestObstacle = findDirectionAwayFromNearestObstacle(array);		
+				// rc.setIndicatorLine(here, here.add(awayFromNearestObstacle), 255, 255, 255);
+				
 				if (amFirstGardener)
 				{
-					tryToMove(farmerMovingDirection);
-					moveNumber = (moveNumber + 1) % 16;
-					if (moveNumber % 2 == 0)
-					{
-						farmerMovingDirection = farmerMovingDirection.rotateLeftDegrees(51.43f);
-					}
+					tryToMove(awayFromNearestObstacle);
 					if (typeToSpawnFirst != null && spawn(typeToSpawnFirst))
 					{
 						if (typeToSpawnFirst.equals(RobotType.SCOUT))
@@ -61,7 +61,10 @@ public class GardenerBot extends Globals
 					}
 					else if (treesIPlanted < 3)
 					{
-						tryToPlantUnplanned();
+						if (rc.hasTreeBuildRequirements() && rc.getBuildCooldownTurns() <= 0)
+						{
+							tryToPlant();
+						}
 					}
 					if (typeToSpawnFirst == null)
 					{
@@ -70,20 +73,21 @@ public class GardenerBot extends Globals
 				}
 				else if (amFarmer)
 				{
-					tryToMove(farmerMovingDirection);
-					moveNumber = (moveNumber + 1) % 16;
-					if (moveNumber % 2 == 0)
+					if (roundNum - spawnRoundNum > 2)
 					{
-						tryToPlantUnplanned();
-						farmerMovingDirection = farmerMovingDirection.rotateLeftDegrees(51.43f);
+						if (rc.hasTreeBuildRequirements() && rc.getBuildCooldownTurns() <= 0)
+						{
+							tryToPlant();
+						}
+					}
+					else
+					{
+						tryToMove(awayFromNearestObstacle);
 					}
 				}
 				else
 				{
-					if (!tryToMove(movingDirection))
-					{
-						movingDirection = randomDirection();
-					}
+					tryToMove(awayFromNearestObstacle);
 					tryToBuild();
 				}
 				footer();
@@ -122,16 +126,11 @@ public class GardenerBot extends Globals
 		return answer;
 	}
 
-	private static boolean tryToPlantUnplanned()throws GameActionException
+	private static boolean tryToPlant()throws GameActionException
 	{
-		if (!rc.hasTreeBuildRequirements() && rc.getBuildCooldownTurns() <= 0)
+		int tries = 1;
+		while (tries <= 6)
 		{
-			return false;
-		}
-		int tries = 0;
-		while (tries <= 10)
-		{
-			Direction plantDirection = farmerMovingDirection.rotateRightDegrees(85);
             if (rc.canPlantTree(plantDirection))
 			{
             	rc.plantTree(plantDirection);
@@ -140,19 +139,19 @@ public class GardenerBot extends Globals
                 rc.broadcast(TREE_CHANNEL, treesPlanted + 1);
                 return true;
 			}
-            plantDirection = plantDirection.rotateRightDegrees(1);
+            plantDirection = plantDirection.rotateRightDegrees(60);
             tries++;
 		}
 		return false;
 	}
 
-	private static void tryToWater()throws GameActionException
+	private static boolean tryToWater()throws GameActionException
 	{
         if(rc.canWater()) 
         {
             TreeInfo[] nearbyTrees = rc.senseNearbyTrees();
             int loopLength = nearbyTrees.length;
-			for (int i=0;i<loopLength;i++)
+			for (int i = 0; i < loopLength; i++)
 			{	
 				TreeInfo tree = nearbyTrees[i];
 				float treeHealth = tree.getHealth();
@@ -161,10 +160,12 @@ public class GardenerBot extends Globals
                     if (rc.canWater(tree.getID())) 
                     {
                         rc.water(tree.getID());
+                        return true;
                     }
                 }
             }
         }
+        return false;
     }
 	
 	
@@ -172,7 +173,7 @@ public class GardenerBot extends Globals
 	
 	private static boolean tryToBuild()throws GameActionException
 	{		
-		if (scouts < 2 || (scouts < Math.ceil((20d * roundNum) / 3000d)))
+		if (scouts < 2 || (scouts < Math.ceil((8d * roundNum) / 3000d)))
 		{
 			if (rc.hasRobotBuildRequirements(RobotType.SCOUT))
 			{
@@ -182,7 +183,7 @@ public class GardenerBot extends Globals
 		
 		// Replace stupidCondition with some other condition
 		
-		boolean stupidConditionForLumberjacks = neutralTrees.length > 6 || lumberjacks < 2 ;
+		boolean stupidConditionForLumberjacks = neutralTrees.length > 15 || lumberjacks < 2;
 		if (stupidConditionForLumberjacks && lumberjacks < 20)
 		{
 			if (rc.hasRobotBuildRequirements(RobotType.LUMBERJACK))
@@ -191,8 +192,8 @@ public class GardenerBot extends Globals
 			}
 		}
 
-		boolean stupidConditionForSoldiers = (soldiers < farmers * 2);
-		if (stupidConditionForSoldiers && soldiers < 25)
+		boolean stupidConditionForSoldiers =  (soldiers <= 5) || (tanks * 3 >= soldiers * 2);
+		if (stupidConditionForSoldiers && soldiers < 30)
 		{
 			if (rc.hasRobotBuildRequirements(RobotType.SOLDIER))
 			{
@@ -200,16 +201,14 @@ public class GardenerBot extends Globals
 			}
 		}
 		
-		/* Make tanks later		
-		stupidCondition = tanks * 2 < soldiers;
-		if (stupidCondition && tanks < 20)
+		boolean stupidConditionForTanks = allyTrees.length == 0;
+		if (stupidConditionForTanks && tanks < 10)
 		{
 			if (rc.hasRobotBuildRequirements(RobotType.TANK))
 			{
 				return spawn(RobotType.TANK);
 			}
 		}
-		*/
 		return false;
 	}
 	

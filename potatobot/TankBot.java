@@ -3,7 +3,6 @@ import battlecode.common.*;
 
 public class TankBot extends Globals
 {
-	public static int patience = 30;
 	public static void loop()throws GameActionException
 	{
 		if (ourInitialArchons[0].distanceTo(theirInitialArchons[0]) > 35f)
@@ -19,7 +18,7 @@ public class TankBot extends Globals
 				findMoveDirection();
 				
 				// movingDirection decided, now tryToMove
-				if (!tryToMove(movingDirection))
+				if (!tryToMove(movingDirection) || movedBack)
 				{
 					patience--;
 					if (patience <= -30)
@@ -31,18 +30,27 @@ public class TankBot extends Globals
 					{
 						if (neutralTrees.length != 0)
 						{
-							MapLocation closestTreeLocation = neutralTrees[0].getLocation();
+							TreeInfo tree = neutralTrees[0];
+							MapLocation closestTreeLocation = tree.getLocation();
 							Direction shotDirection = here.directionTo(closestTreeLocation);
+							float treeDistance = tree.getLocation().distanceTo(here);
 							if (rc.canFireSingleShot())
 							{
 								boolean killingFriend = false;
 								int loopLength = allies.length;
-								for(int i = 0; i<loopLength;i++)
+								for(int i = 0; i < loopLength; i++)
 								{
 									RobotInfo ally = allies[i];
-									if (willHitBody(ally, shotDirection, here) && ally.getLocation().distanceTo(here) < closestTreeLocation.distanceTo(here))
+									if (ally.getLocation().distanceTo(here) < treeDistance)
 									{
-										killingFriend = true;
+										if (willHitBody(ally, shotDirection, here))
+										{
+											killingFriend = true;
+											break;
+										}
+									}
+									else
+									{
 										break;
 									}
 								}
@@ -75,47 +83,7 @@ public class TankBot extends Globals
 	
 	private static void findMoveDirection()throws GameActionException
 	{
-		// Defend your closest farmer
-		if (soldiers <= farmers)
-		{
-			int numberOfAllyFarmLocations = rc.readBroadcast(FARM_LOCATIONS_CHANNELS[0]);
-			float closestFarmDistance = 500000;
-			MapLocation closestFarmLocation = null;
-			if (numberOfAllyFarmLocations > 0)
-			{
-				for (int i = 1; i <= numberOfAllyFarmLocations; i++)
-				{
-					int hashedLocation = rc.readBroadcast(FARM_LOCATIONS_CHANNELS[i]);
-					if (hashedLocation == 0)
-					{
-						continue;
-					}
-					else
-					{
-						MapLocation unhashedLocation = unhashIt(hashedLocation);
-						float farmDistance = here.distanceTo(unhashedLocation);
-						if (farmDistance < closestFarmDistance)
-						{
-							closestFarmDistance = farmDistance;
-							closestFarmLocation = unhashedLocation;
-						}
-					}
-				}
-			}
-			if (closestFarmLocation != null)
-			{
-				Direction toClosestFarm = here.directionTo(closestFarmLocation);
-				if (closestFarmDistance > 5f)
-				{
-					movingDirection = toClosestFarm;
-				}
-				else
-				{
-					movingDirection = toClosestFarm.opposite();
-				}
-			}
-		}
-		else if (enemies.length != 0)
+		if (enemies.length != 0)
 		{
 			MapLocation enemyLocation = enemies[0].getLocation();
 			movingDirection = here.directionTo(enemyLocation);
@@ -129,6 +97,7 @@ public class TankBot extends Globals
 			}
 			else
 			{
+				// rc.setIndicatorLine(here, enemyTargetLocation, 255, 0, 0);
 				movingDirection = here.directionTo(enemyTargetLocation);
 			}
 		}

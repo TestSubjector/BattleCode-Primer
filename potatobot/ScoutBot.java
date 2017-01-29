@@ -35,7 +35,7 @@ public class ScoutBot extends Globals
 
 		// look for the closest enemy and shoot
 		int loopLength = enemies.length;
-		for(int i=0;i<loopLength;i++)
+		for(int i = 0; i < loopLength; i++)
 		{
 			RobotInfo enemy = enemies[i];
 			if ((roundNum > 500 || enemy.getType() != RobotType.ARCHON)  && trySingleShot(enemy))
@@ -49,28 +49,20 @@ public class ScoutBot extends Globals
 
 	private static void findMoveDirection()throws GameActionException
 	{
-		if (enemies.length != 0)
+		if (enemyTarget != 0)
+		{
+			movingDirection = here.directionTo(enemyTargetLocation);
+		}
+		else if (enemies.length != 0)
 		{
 			RobotInfo enemy = enemies[0];
 			RobotType enemyType = enemy.getType();
 			MapLocation enemyLocation = enemy.getLocation();
-			movingDirection = here.directionTo(enemyLocation);
-			if (enemyType == RobotType.SOLDIER || enemyType == RobotType.TANK)
+			if (!(enemyType == RobotType.SOLDIER || enemyType == RobotType.TANK || enemyType == RobotType.ARCHON) && (here.distanceTo(enemyLocation) < 7f))
 			{
-				movingDirection = enemyLocation.directionTo(here);
+				movingDirection = here.directionTo(enemyLocation);
 			}
-		}
-		else if (enemyTarget != 0)
-		{
-			if (rc.canSenseLocation(enemyTargetLocation) && !rc.canSenseRobot(enemyTarget))
-			{
-				enemyTarget = 0;
-				movingDirection = randomDirection();
-			}
-			else
-			{
-				movingDirection = here.directionTo(enemyTargetLocation);
-			}
+			return;
 		}
 		// Check nearby neutral trees for bullets
 		int loopLength = neutralTrees.length;

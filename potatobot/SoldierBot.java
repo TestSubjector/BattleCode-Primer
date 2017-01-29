@@ -3,7 +3,6 @@ import battlecode.common.*;
 
 public class SoldierBot extends Globals
 {
-	public static int patience = 30;
 	public static void loop()throws GameActionException
 	{
 		if (ourInitialArchons[0].distanceTo(theirInitialArchons[0]) > 35f)
@@ -19,7 +18,7 @@ public class SoldierBot extends Globals
 				findMoveDirection();
 				
 				// movingDirection decided, now tryToMove
-				if (!tryToMove(movingDirection))
+				if (!tryToMove(movingDirection) || movedBack)
 				{
 					patience--;
 					if (patience <= -30)
@@ -84,47 +83,7 @@ public class SoldierBot extends Globals
 	
 	private static void findMoveDirection()throws GameActionException
 	{
-		// Defend your closest farmer
-		if (soldiers <= farmers)
-		{
-			int numberOfAllyFarmLocations = rc.readBroadcast(FARM_LOCATIONS_CHANNELS[0]);
-			float closestFarmDistance = 500000;
-			MapLocation closestFarmLocation = null;
-			if (numberOfAllyFarmLocations > 0)
-			{
-				for (int i = 1; i <= numberOfAllyFarmLocations; i++)
-				{
-					int hashedLocation = rc.readBroadcast(FARM_LOCATIONS_CHANNELS[i]);
-					if (hashedLocation == 0)
-					{
-						continue;
-					}
-					else
-					{
-						MapLocation unhashedLocation = unhashIt(hashedLocation);
-						float farmDistance = here.distanceTo(unhashedLocation);
-						if (farmDistance < closestFarmDistance)
-						{
-							closestFarmDistance = farmDistance;
-							closestFarmLocation = unhashedLocation;
-						}
-					}
-				}
-			}
-			if (closestFarmLocation != null)
-			{
-				Direction toClosestFarm = here.directionTo(closestFarmLocation);
-				if (closestFarmDistance > 6f)
-				{
-					movingDirection = toClosestFarm;
-				}
-				else
-				{
-					movingDirection = toClosestFarm.opposite();
-				}
-			}
-		}
-		else if (enemies.length != 0)
+		if (enemies.length != 0)
 		{
 			MapLocation enemyLocation = enemies[0].getLocation();
 			movingDirection = here.directionTo(enemyLocation);

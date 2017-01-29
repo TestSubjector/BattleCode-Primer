@@ -69,6 +69,10 @@ public class LumberjackBot extends Globals
 			TreeInfo closestNeutralTree = neutralTrees[0];
 			movingDirection = here.directionTo(closestNeutralTree.getLocation());
 		}
+		else
+		{
+			movingDirection = randomDirection();
+		}
 	}
 	
 	private static boolean tryToStrike()throws GameActionException 

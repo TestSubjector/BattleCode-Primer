@@ -15,6 +15,7 @@ public class Globals
 	public static Team them;
 	public static MapLocation[] ourInitialArchons;
 	public static MapLocation[] theirInitialArchons;
+	public static float archonDistance;
 	public static int numberOfArchons;
 	public static int victoryPoints;
 	public static Direction movingDirection;
@@ -42,6 +43,8 @@ public class Globals
 	public static float importantTreeTargetDistance;
 	public static boolean amFarmer;
 	public static int[] tryAngles;
+	public static int patience;
+	public static boolean movedBack;
 	
 	// Broadcast Channels
 	public static int TREE_CHANNEL = 64;
@@ -104,12 +107,13 @@ public class Globals
 		them = us.opponent();
 		ourInitialArchons = rc.getInitialArchonLocations(us);
 		theirInitialArchons = rc.getInitialArchonLocations(them);
+		archonDistance = ourInitialArchons[0].distanceTo(theirInitialArchons[0]);
+		numberOfArchons = theirInitialArchons.length;
 		victoryPoints = 0;
 		movingDirection = randomDirection();
 		robotCount = new int[8];
 		updateRobotCount();
 		updateNonAllyTreeDensity();
-		numberOfArchons = theirInitialArchons.length;
 		treesPlanted = 0;
 		enemyTarget = 0;
 		enemyTargetLocation = null;
@@ -119,6 +123,8 @@ public class Globals
 		importantTreeTargetDistance = 5000000f;
 		initTryAngles();
 		initChannels();
+		patience = 30;
+		movedBack = false;
 	}
 
 	public static void robotInit(RobotType type)throws GameActionException
@@ -130,9 +136,8 @@ public class Globals
 	
 	public static void initTryAngles()
 	{
-		int number = (RobotType.SCOUT == myType) ? 91 : 181;
-		tryAngles = new int[number];
-		for (int i = 0; i < number; i++)
+		tryAngles = new int[241];
+		for (int i = (myType == RobotType.SCOUT) ? 90 : 0; i < 241; i++)
 		{
 			if (i % 2 == 0)
 			{
@@ -204,6 +209,57 @@ public class Globals
 		}
 		return false;
 	}
+	
+	public static Direction findDirectionAwayFromNearestObstacle(BodyInfo array[][])throws GameActionException 
+	{
+		float minDist = 100000f;
+		Direction awayFromNearestObstacle = null;
+		for (int i = 0; i < array.length; i++)
+		{
+			int arrayLength = array[i].length;
+			if (arrayLength != 0)
+			{
+				if (array[i][0].isRobot())
+				{
+					array[i][0] = (RobotInfo)array[i][0];
+				}
+				else
+				{
+					array[i][0] = (TreeInfo)array[i][0];
+				}
+				MapLocation bodyLocation = array[i][0].getLocation();
+				float bodyDistance = bodyLocation.distanceTo(here) - array[i][0].getRadius();
+				if (bodyDistance <= minDist)
+				{
+					awayFromNearestObstacle = bodyLocation.directionTo(here);
+					minDist = bodyDistance;
+				}
+			}
+		}
+		minDist = Math.min(minDist, myType.sensorRadius - 0.1f);
+		float angle = 0;
+		Direction initialDirection = Direction.getEast();
+		while (angle < 360)
+		{
+			Direction sensorDirection = initialDirection.rotateLeftDegrees(angle);
+			while (rc.canSenseLocation(here.add(sensorDirection, minDist)) && !rc.onTheMap(here.add(sensorDirection, minDist)))
+			{
+				minDist = Math.max(minDist - 0.5f, 2.0f);
+				if (minDist <= 2.01f)
+				{
+					return sensorDirection.opposite();
+				}
+				awayFromNearestObstacle = sensorDirection.opposite();
+			}
+			angle += 4;
+		}
+		if (awayFromNearestObstacle == null)
+		{
+			return randomDirection();
+		}
+		return awayFromNearestObstacle;
+	}
+
 	
 	public static boolean dying()throws GameActionException
 	{
@@ -289,7 +345,7 @@ public class Globals
 		sensedBullets = rc.senseNearbyBullets();
 	}
 	
-	public static void updateNearbyObjectLocations()throws GameActionException
+	public static void updateNearbyObjects()throws GameActionException
 	{
 		allies = rc.senseNearbyRobots(-1, us);
 		enemies = rc.senseNearbyRobots(-1, them);
@@ -424,9 +480,8 @@ public class Globals
 				if (!found)
 				{
 					int index = rc.readBroadcast(ENEMY_ARCHONS_CHANNELS[archonChannelLength - 1]);
-					if (index == 10)
+					if (index >= 10)
 					{
-						// This ain't never gonna happen
 						System.out.println("Lite");
 					}
 					else
@@ -440,7 +495,7 @@ public class Globals
 				}
 				else
 				{
-					int index = gardenersRead[k][1];
+					int index = archonsRead[k][1];
 					int hashedLocation = hashIt(enemyLocation);
 					rc.broadcast(ENEMY_ARCHONS_CHANNELS[index + 1], hashedLocation);
 					rc.broadcast(ENEMY_ARCHONS_CHANNELS[index + 2], roundNum);
@@ -596,6 +651,14 @@ public class Globals
 			Direction candidateDirection = movingDirection.rotateLeftDegrees(angle);
 			if (rc.canMove(candidateDirection))
 			{
+				if (i <= 210)
+				{
+					movedBack = false;
+				}
+				else
+				{
+					movedBack = true;
+				}
 				rc.move(candidateDirection);
 				updateLocation();
 				return true;
@@ -936,7 +999,7 @@ public class Globals
 		doVictoryPointsCalculations();
 		updateNearbyBullets();
 		updateRobotCount();
-		updateNearbyObjectLocations();
+		updateNearbyObjects();
 		tryToDodge();
 		if (dying())
 		{
