@@ -23,8 +23,10 @@ public class ArchonBot extends Globals
 				// Use TreeDensity after Akhil is done with the maths
 				if (rc.getBuildCooldownTurns() <= 0 && (soldiers >= 1 || gardeners < 1 || roundNum > 75))
 				{
+					System.out.println("1");
 					if ((gardeners < 2  || neutralTrees.length < 15) && gardeners <= gameProgressPercentage * 30 && tryHiringGardener())
 					{
+						System.out.println("2");
 						robotInit(RobotType.GARDENER);
 					}
 				}
@@ -34,16 +36,7 @@ public class ArchonBot extends Globals
 				}
 				if (!tryToMove(movingDirection))
 				{
-					float angle = ((float)Math.random() * 45f + 80f);
-					double choice = Math.random();
-					if (choice > 0.5)
-					{
-						movingDirection = movingDirection.rotateLeftDegrees(angle);
-					}
-					else
-					{
-						movingDirection = movingDirection.rotateRightDegrees(angle);
-					}
+					movingDirection = randomDirection();
 				}
 				footer();
 			}
@@ -59,7 +52,7 @@ public class ArchonBot extends Globals
 	{
 		int tries = 0;
 		Direction hireDirection = here.directionTo(theirInitialArchons[0]);
-		while (tries < 36)
+		while (tries < 90)
 		{
 			if (rc.canHireGardener(hireDirection))
 			{
@@ -68,7 +61,7 @@ public class ArchonBot extends Globals
 			}
 			else
 			{
-				hireDirection.rotateLeftDegrees(10);
+				hireDirection = hireDirection.rotateLeftDegrees(4f);
 			}
 			tries++;
 		}

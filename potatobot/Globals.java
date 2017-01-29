@@ -45,6 +45,7 @@ public class Globals
 	public static int[] tryAngles;
 	public static int patience;
 	public static boolean movedBack;
+	public static boolean lastMoveWasPositive;
 	
 	// Broadcast Channels
 	public static int TREE_CHANNEL = 64;
@@ -125,6 +126,7 @@ public class Globals
 		initChannels();
 		patience = 30;
 		movedBack = false;
+		lastMoveWasPositive = true;
 	}
 
 	public static void robotInit(RobotType type)throws GameActionException
@@ -136,8 +138,9 @@ public class Globals
 	
 	public static void initTryAngles()
 	{
-		tryAngles = new int[241];
-		for (int i = (myType == RobotType.SCOUT) ? 90 : 0; i < 241; i++)
+		int numberOfAngles = 221; 
+		tryAngles = new int[numberOfAngles];
+		for (int i = 0; i < numberOfAngles; i++)
 		{
 			if (i % 2 == 0)
 			{
@@ -644,8 +647,39 @@ public class Globals
 		{
 			return false;
 		}
-		int loopLength = tryAngles.length;
-		for(int i = 0; i < loopLength; i++)
+		int loopStart = (myType == RobotType.SCOUT) ? 90 : 0;
+		int loopLength = (myType == RobotType.SCOUT) ? 179 : tryAngles.length;
+		for(int i = loopStart; i < loopLength; i++)
+		{
+			int angle = tryAngles[i];
+			if ((lastMoveWasPositive && angle >= 0) || (!lastMoveWasPositive && angle < 0))
+			{
+				Direction candidateDirection = movingDirection.rotateLeftDegrees(angle);
+				if (rc.canMove(candidateDirection))
+				{
+					if (i <= 210)
+					{
+						movedBack = false;
+					}
+					else
+					{
+						movedBack = true;
+					}
+					if (angle < 0)
+					{
+						lastMoveWasPositive = false;
+					}
+					else
+					{
+						lastMoveWasPositive = true;
+					}
+					rc.move(candidateDirection);
+					updateLocation();
+					return true;
+				}
+			}
+		}
+		for(int i = loopStart; i < loopLength; i++)
 		{
 			int angle = tryAngles[i];
 			Direction candidateDirection = movingDirection.rotateLeftDegrees(angle);
@@ -658,6 +692,14 @@ public class Globals
 				else
 				{
 					movedBack = true;
+				}
+				if (angle < 0)
+				{
+					lastMoveWasPositive = false;
+				}
+				else
+				{
+					lastMoveWasPositive = true;
 				}
 				rc.move(candidateDirection);
 				updateLocation();
@@ -796,195 +838,221 @@ public class Globals
 		return false;
 	}
 	
-	public static boolean trySingleShot(RobotInfo enemy)throws GameActionException
+	public static boolean tryShot()throws GameActionException
 	{
-		Direction directionToCentre = here.directionTo(enemy.getLocation());
-		if (rc.canFireSingleShot())
+		// Center, TriadLeft, TriadRight, PentadLeftest, PentadLeft, PentadRight, PentadRightest
+		Direction[] shotDirections = {null,null,null,null,null,null,null}; 
+		Target[] TargetHit = {Target.NONE,Target.NONE,Target.NONE,Target.NONE,Target.NONE,Target.NONE,Target.NONE};
+		float[] targetDist = {0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f};
+		int enemiesLen = enemies.length;
+		int alliesLen = allies.length;
+		int allyTreesLen = allyTrees.length;
+		int neutralTreesLen = neutralTrees.length;
+		for(int i = 0; i < enemiesLen; i++)
 		{
-			// Direction shotDirection = directionToCentre;
-			// rc.setIndicatorLine(here, enemy.getLocation(), 0, 255, 0);
-			boolean killingFriend = false;
-			boolean killingTree = false;
-			int loopLength = allies.length;
-			float enemyDistance = enemy.getLocation().distanceTo(here);
-			for(int i = 0; i < loopLength; i++)
+			if (myType == RobotType.SCOUT && enemies[i].getType() == RobotType.ARCHON && roundNum < 400)
 			{
-				RobotInfo ally = allies[i];
-				if (ally.getLocation().distanceTo(here) < enemyDistance)
-				{
-					if (willHitBody(ally, directionToCentre, here))
-					{
-						killingFriend = true;
-						break;
-					}
-				}
-				else
-				{
-					break;
-				}
+				continue;
 			}
-			loopLength = neutralTrees.length;
-			for(int i = 0; i < loopLength; i++)
-			{
-				TreeInfo tree = neutralTrees[i];
-				if (tree.getLocation().distanceTo(here) < enemyDistance)
-				{
-					if (willHitBody(tree, directionToCentre, here))
-					{
-						killingTree = true;
-						break;
-					}
-				}
-				else
-				{
-					break;
-				}
-			}
-			if (!(killingFriend || killingTree))
-			{
-				if (rc.canFireSingleShot())
-				{
-					rc.fireSingleShot(directionToCentre);
-				}
-				return true;
-			}
-		}
-		return false;
-	}
-	
-	public static boolean reviseTarget(boolean[] arr)
-	{
-		//returns false if no change needed (i.e. shoot) else true if shoot has to be aborted
-		int true_count=0;
-		for(int i=0;i < arr.length;i++){
-			if(arr[i]){
-				true_count++;
-			}
-		}
-		if(arr.length==3){
-			//triad shot
-			//2 on 3 need to be false (implies not hitting friend)
-			if(true_count<2){
-				return false;
-			}
-			else{
-				return true;
-			}
-		}
-		else{
-			//pentad shot
-			//3 on 5 need to be false
-			if(true_count<3){
-				return false;
-			}
-			else{
-				return true;
-			}
-		}
-	}
-	
-	public static boolean tryTriadShot(RobotInfo enemy)throws GameActionException
-	{
-		Direction[] shotDirections = {null,here.directionTo(enemy.getLocation()),null}; //left,centre,right
-		shotDirections[0] = shotDirections[1].rotateLeftDegrees(GameConstants.TRIAD_SPREAD_DEGREES);
-		shotDirections[2] = shotDirections[1].rotateRightDegrees(GameConstants.TRIAD_SPREAD_DEGREES);
-		
-		RobotInfo[] RobotHit = {null,enemy,null}; // left,centre,right
-		boolean[] friendHit = {false,false,false}; // left,centre,right
-		
-		if (rc.canFireTriadShot())
-		{
-			if(willHitBody(RobotHit[1],shotDirections[0],here)||willHitBody(RobotHit[1],shotDirections[2],here)){
-				//2 out of 3 bullets hitting single enemy.
-				//Also means no need to check for allies in between due to proximity conditions
-				rc.fireTriadShot(shotDirections[1]);
-				return true;
-			}
-			int loopLength = enemies.length;
-			for(int i = 0; i<loopLength;i++)
-			{
-				RobotInfo foe = enemies[i];
-				if(willHitBody(foe,shotDirections[0],here) && RobotHit[0]==null){
-					//since 'enemies' array is ordered closest to farthest, the first assignment to
-					//leftHit will be one it actually hits
-					RobotHit[0] = foe;
-				}
-				if(willHitBody(foe,shotDirections[2],here) && RobotHit[1]==null){
-					//same as above
-					RobotHit[2] = foe;
-				}
-			}
-			//Now check for allies in between
-			loopLength = allies.length;
-			for(int i = 0; i<loopLength;i++)
-			{
-				RobotInfo ally = allies[i];
-				if(willHitBody(ally,shotDirections[1],here) && ally.getLocation().distanceTo(here) < RobotHit[1].getLocation().distanceTo(here)){
-					//hitting ally not enemy
-					friendHit[1]=true;
-				}
-				if(willHitBody(ally,shotDirections[0],here) && RobotHit[0] != null && ally.getLocation().distanceTo(here) < RobotHit[0].getLocation().distanceTo(here)){
-					//hitting ally not enemy
-					friendHit[0]=true;
-				}
-				if(willHitBody(ally,shotDirections[2],here) && RobotHit[2] != null && ally.getLocation().distanceTo(here) < RobotHit[2].getLocation().distanceTo(here)){
-					//hitting ally not enemy
-					friendHit[2]=true;
-				}
-				
-				if(!reviseTarget(friendHit)){
-					//shoot triad
-					rc.fireTriadShot(shotDirections[1]);
-					return true;
-				}
-			}
-		}
-		return false;
-	}
-	
-	public static boolean tryPentadShot(RobotInfo enemy)throws GameActionException
-	{	
-		// all arrays are leftmost to rightmost. So, [2] is the centreDirection|Bot 
-		Direction[] shotDirections = {null,null,here.directionTo(enemy.getLocation()),null,null};
-		shotDirections[1] = shotDirections[2].rotateLeftDegrees(GameConstants.PENTAD_SPREAD_DEGREES);
-		shotDirections[0] = shotDirections[1].rotateLeftDegrees(GameConstants.PENTAD_SPREAD_DEGREES);
-		shotDirections[3] = shotDirections[2].rotateRightDegrees(GameConstants.PENTAD_SPREAD_DEGREES);
-		shotDirections[4] = shotDirections[3].rotateRightDegrees(GameConstants.PENTAD_SPREAD_DEGREES);
-		
-		RobotInfo[] RobotHit = {null,null,enemy,null,null};
-		boolean[] friendHit = {false,false,false,false,false};
-		
-		if (rc.canFirePentadShot()){
+			int j;
+			shotDirections[0] = here.directionTo(enemies[i].getLocation());
+			shotDirections[1] = shotDirections[0].rotateLeftDegrees(GameConstants.TRIAD_SPREAD_DEGREES);
+			shotDirections[2] = shotDirections[0].rotateRightDegrees(GameConstants.TRIAD_SPREAD_DEGREES);
+			shotDirections[3] = shotDirections[0].rotateLeftDegrees(2 * GameConstants.PENTAD_SPREAD_DEGREES);
+			shotDirections[4] = shotDirections[0].rotateLeftDegrees(GameConstants.PENTAD_SPREAD_DEGREES);
+			shotDirections[5] = shotDirections[0].rotateRightDegrees(GameConstants.TRIAD_SPREAD_DEGREES);
+			shotDirections[6] = shotDirections[0].rotateRightDegrees(2 * GameConstants.PENTAD_SPREAD_DEGREES);
 			
-			int loopLength = enemies.length;
-			for(int j = 0; j<loopLength;j++)
+			TargetHit[0] = Target.ENEMY;
+			TargetHit[1] = Target.NONE;
+			TargetHit[2] = Target.NONE;
+			TargetHit[3] = Target.NONE;
+			TargetHit[4] = Target.NONE;
+			TargetHit[5] = Target.NONE;
+			TargetHit[6] = Target.NONE;
+			
+			targetDist[0] = enemies[i].getLocation().distanceTo(here);
+			targetDist[1] = 0.0f;
+			targetDist[2] = 0.0f;
+			targetDist[3] = 0.0f;
+			targetDist[4] = 0.0f;
+			targetDist[5] = 0.0f;
+			targetDist[6] = 0.0f;
+			int directionLimit = 1;
+			if (rc.canFirePentadShot())
 			{
-				RobotInfo foe = enemies[j];
-				for(int i=0;i<5;i++){
-					if(willHitBody(foe,shotDirections[i],here) && RobotHit[i]==null){
-						RobotHit[i] = foe;
-					}
-				}
+				directionLimit = 7;
 			}
-			//Now check for allies in between
-			loopLength = allies.length;
-			for(int j = 0; j<loopLength;j++)
+			else if (rc.canFireTriadShot())
 			{
-				RobotInfo ally = allies[j];
-				for(int i=0;i<5;i++){
-					if(willHitBody(ally,shotDirections[i],here) && RobotHit[i] != null && ally.getLocation().distanceTo(here) < RobotHit[i].getLocation().distanceTo(here)){
-						friendHit[i] = true;
+				directionLimit = 3;
+			}
+			for(int k = 0; k < directionLimit; k++)
+			{
+				for(j = 0; j < enemiesLen ; j++)
+				{
+					if(willHitBody(enemies[j],shotDirections[k],here))
+					{
+						TargetHit[k]  = Target.ENEMY;
+						targetDist[k] = here.distanceTo(enemies[j].getLocation());
+						break;
 					}
 				}
 				
-				if(!reviseTarget(friendHit)){
-					//shoot pentad
-					rc.firePentadShot(shotDirections[2]);
-					return true;
+				for(j = 0;j < alliesLen; j++)
+				{
+					if(willHitBody(allies[j],shotDirections[k],here) && here.distanceTo(allies[j].getLocation()) < targetDist[k])
+					{
+						TargetHit[k]  = Target.ALLY;
+						targetDist[k] = here.distanceTo(allies[j].getLocation());
+						break;
+					}
 				}
+				
+				for(j = 0; j < allyTreesLen; j++)
+				{
+					if(willHitBody(allyTrees[j],shotDirections[k],here) && here.distanceTo(allyTrees[j].getLocation()) < targetDist[k])
+					{
+						TargetHit[k]  = Target.ALLY_TREE;
+						targetDist[k] = here.distanceTo(allyTrees[j].getLocation());
+						break;
+					}
+				}
+				
+				for(j = 0; j < neutralTreesLen; j++)
+				{
+					if(willHitBody(neutralTrees[j],shotDirections[k],here) && here.distanceTo(neutralTrees[j].getLocation()) < targetDist[k])
+					{
+						TargetHit[k]  = Target.NEUTRAL_TREE;
+						break;
+					}
+				}
+			}//end of directions loop
+			switch (whichShotToFire(TargetHit, directionLimit))
+			{
+				case 0:
+					break;
+				case 1:
+					if (rc.canFireSingleShot())
+					{
+						rc.fireSingleShot(shotDirections[0]);
+					}
+					return true;
+				case 3:
+					if (rc.canFireTriadShot())
+					{
+						rc.fireTriadShot(shotDirections[0]);
+					}
+					return true;
+				case 5:
+					if (rc.canFirePentadShot())
+					{
+						rc.firePentadShot(shotDirections[0]);
+					}
+					return true;
+			}
+		}// end of topmost enemLoop; decides centerDir
+		return false;
+	}
+	
+	enum Target 
+	{
+		ENEMY, ALLY, NONE, NEUTRAL_TREE, ALLY_TREE
+	}
+	
+	public static int whichShotToFire(Target[] arr, int directionLimit)
+	{
+		
+		boolean[][] hit = new boolean[7][2];
+		for(int i = 0; i < directionLimit; i++)
+		{
+			switch(arr[i])
+			{
+				case ENEMY: hit[i][0] = true; break;
+				case ALLY: hit[i][1] = true; break;
+				case ALLY_TREE: break;
+				case NEUTRAL_TREE: break;
+				case NONE: break;
+				default: break;
 			}
 		}
-		return false;
+		
+		int enemySum = 0, allySum = 0, wasteSum = 0, ans = 0;
+		float maxWeight = 0.0f;
+		final float SINGLE_ENEMY_WEIGHT = 3.0f, SINGLE_ALLY_WEIGHT = -1.2f, SINGLE_WASTE_WEIGHT = -0.4f;
+		final float TRIAD_ENEMY_WEIGHT = 7.5f, TRIAD_ALLY_WEIGHT = -3.0f, TRIAD_WASTE_WEIGHT = -1.0f;
+		final float PENTAD_ENEMY_WEIGHT = 9.0f, PENTAD_ALLY_WEIGHT = -4.8f, PENTAD_WASTE_WEIGHT = -1.2f;
+		
+		if(directionLimit == 7)
+		{
+			//pentad check
+			float weight = 0.0f;
+			for(int i = 0; i < 7; i++)
+			{
+				if(i == 1 || i == 2) continue;
+				if (hit[i][0])
+				{
+					enemySum++;
+				}
+				else if (hit[i][1])
+				{
+					allySum++;
+				}
+				else
+				{
+					wasteSum++;
+				}
+			}
+			weight = (PENTAD_ENEMY_WEIGHT * enemySum + PENTAD_ALLY_WEIGHT * allySum + PENTAD_WASTE_WEIGHT * wasteSum) / 6.0f;
+			if (weight > maxWeight)
+			{
+				maxWeight = weight; 
+				ans = 5;
+			}
+		}
+		if(directionLimit >= 3)
+		{
+			//triad check
+			float weight = 0.0f;
+			enemySum = 0;
+			allySum = 0;
+			wasteSum = 0;
+			for(int i = 0; i < 3; i++)
+			{
+				if (hit[i][0])
+				{
+					enemySum++;
+				}
+				else if (hit[i][1])
+				{
+					allySum++;
+				}
+				else
+				{
+					wasteSum++;
+				}
+			}
+			weight = (TRIAD_ENEMY_WEIGHT * enemySum + TRIAD_ALLY_WEIGHT * allySum + TRIAD_WASTE_WEIGHT * wasteSum) / 4;
+			if (weight > maxWeight)
+			{
+				maxWeight = weight;
+				ans = 3;
+			}
+		}
+		if(directionLimit >= 1)
+		{
+			float weight = (SINGLE_ENEMY_WEIGHT * (hit[0][0] ? 1 : 0) + SINGLE_ALLY_WEIGHT * (hit[0][1] ? 1 : 0));
+			if (weight < 0.1f)
+			{
+				weight = SINGLE_WASTE_WEIGHT;
+			}
+			if (weight > maxWeight)
+			{
+				maxWeight = weight;
+				ans = 1;
+			}
+		}
+		return ans;
 	}
 	
 	// Combat functions end here

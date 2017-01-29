@@ -5,10 +5,7 @@ public class SoldierBot extends Globals
 {
 	public static void loop()throws GameActionException
 	{
-		if (archonDistance < 35f)
-		{
-			movingDirection = here.directionTo(theirInitialArchons[0]);
-		}
+		movingDirection = here.directionTo(theirInitialArchons[0]);
 		while (true)
 		{
 			try
@@ -32,7 +29,7 @@ public class SoldierBot extends Globals
 					patience = 30;
 				}
 				
-				shootClosestEnemy();
+				tryShot();
 				
 				footer();
 			}
@@ -112,31 +109,5 @@ public class SoldierBot extends Globals
 				}
 			}
 		}
-	}
-	
-	public static boolean shootClosestEnemy()throws GameActionException
-	{
-		if (enemies.length == 0)
-		{
-			return false;
-		}
-		if (tryPentadShot(enemies[0]))
-		{
-			return true;
-		}
-		if (tryTriadShot(enemies[0]))
-		{
-			return true;
-		}
-		int loopLength = enemies.length;
-		for(int i = 0; i < loopLength; i++)
-		{
-			RobotInfo enemy = enemies[i];
-			if (trySingleShot(enemy))
-			{
-				return true;
-			}
-		}
-		return false;
 	}
 }

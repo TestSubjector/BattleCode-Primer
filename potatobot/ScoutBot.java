@@ -19,7 +19,7 @@ public class ScoutBot extends Globals
 				{
 					movingDirection = randomDirection();
 				}
-				shootClosestEnemy();
+				tryShot();
 				footer();
 			}
 			catch (GameActionException e)
@@ -29,23 +29,6 @@ public class ScoutBot extends Globals
 			}
 		}
 	}
-
-	private static boolean shootClosestEnemy()throws GameActionException 
-	{
-
-		// look for the closest enemy and shoot
-		int loopLength = enemies.length;
-		for(int i = 0; i < loopLength; i++)
-		{
-			RobotInfo enemy = enemies[i];
-			if ((roundNum > 500 || enemy.getType() != RobotType.ARCHON)  && trySingleShot(enemy))
-			{
-				return true;
-			}
-		}
-		return false;
-	}
-	
 
 	private static void findMoveDirection()throws GameActionException
 	{
