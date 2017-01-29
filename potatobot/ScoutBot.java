@@ -34,14 +34,8 @@ public class ScoutBot extends Globals
 	{
 
 		// look for the closest enemy and shoot
-		int loopLength = enemies.length;
-		for(int i = 0; i < loopLength; i++)
-		{
-			RobotInfo enemy = enemies[i];
-			if ((roundNum > 500 || enemy.getType() != RobotType.ARCHON)  && trySingleShot(enemy))
-			{
-				return true;
-			}
+		if(trySingleShot()){
+			return true;
 		}
 		return false;
 	}

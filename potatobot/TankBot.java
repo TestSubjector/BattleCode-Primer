@@ -113,22 +113,16 @@ public class TankBot extends Globals
 		{
 			return false;
 		}
-		if (tryPentadShot(enemies[0]))
+		if (tryPentadShot())
 		{
 			return true;
 		}
-		if (tryTriadShot(enemies[0]))
+		if (tryTriadShot())
 		{
 			return true;
 		}
-		int loopLength = enemies.length;
-		for(int i = 0; i<loopLength;i++)
-		{
-			RobotInfo enemy = enemies[i];
-			if (trySingleShot(enemy))
-			{
-				return true;
-			}
+		if(trySingleShot()){
+			return true;
 		}
 		return false;
 	}
