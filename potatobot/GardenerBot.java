@@ -5,7 +5,7 @@ public class GardenerBot extends Globals
 {
 	private static int treesIPlanted = 0;
 	private static boolean amFirstGardener = false;
-	private static RobotType typeToSpawnFirst = RobotType.SCOUT;
+	private static RobotType typeToSpawnFirst;
 	private static Direction plantDirection;
 	public static void loop()throws GameActionException
 	{
@@ -20,9 +20,14 @@ public class GardenerBot extends Globals
 			{
 				amFirstGardener = true;
 			}
-			int farmIndex = rc.readBroadcast(FARM_LOCATIONS_CHANNELS[0]);
-			rc.broadcast(FARM_LOCATIONS_CHANNELS[farmIndex + 1], hashIt(here));
-			rc.broadcast(FARM_LOCATIONS_CHANNELS[0], farmIndex + 1);
+		}
+		if (archonDistance < 35f)
+		{
+			typeToSpawnFirst = RobotType.SOLDIER;
+		}
+		else
+		{
+			typeToSpawnFirst = RobotType.SCOUT;
 		}
 		while (true)
 		{
@@ -33,10 +38,10 @@ public class GardenerBot extends Globals
 				BodyInfo[][] array = {enemies, allies, neutralTrees, enemyTrees, allyTrees};
 				Direction awayFromNearestObstacle = findDirectionAwayFromNearestObstacle(array);		
 				// rc.setIndicatorLine(here, here.add(awayFromNearestObstacle), 255, 255, 255);
-				
 				if (amFirstGardener)
 				{
 					tryToMove(awayFromNearestObstacle);
+					System.out.println(typeToSpawnFirst);
 					if (typeToSpawnFirst != null && spawn(typeToSpawnFirst))
 					{
 						if (typeToSpawnFirst.equals(RobotType.SCOUT))
@@ -56,14 +61,10 @@ public class GardenerBot extends Globals
 						}
 						else if (typeToSpawnFirst.equals(RobotType.SOLDIER))
 						{
-							typeToSpawnFirst = null;
-						}
-					}
-					else if (treesIPlanted < 3)
-					{
-						if (rc.hasTreeBuildRequirements() && rc.getBuildCooldownTurns() <= 0)
-						{
-							tryToPlant();
+							if (soldiers >= 1)
+							{
+								typeToSpawnFirst = null;
+							}
 						}
 					}
 					if (typeToSpawnFirst == null)
@@ -79,6 +80,12 @@ public class GardenerBot extends Globals
 						{
 							tryToPlant();
 						}
+					}
+					else if (roundNum - spawnRoundNum == 2)
+					{
+						int farmIndex = rc.readBroadcast(FARM_LOCATIONS_CHANNELS[0]);
+						rc.broadcast(FARM_LOCATIONS_CHANNELS[farmIndex + 1], hashIt(here));
+						rc.broadcast(FARM_LOCATIONS_CHANNELS[0], farmIndex + 1);
 					}
 					else
 					{
@@ -224,7 +231,7 @@ public class GardenerBot extends Globals
 		{
 			spawnDirection = here.directionTo(neutralTrees[0].getLocation());
 		}
-		while (tries < 20)
+		while (tries < 36)
 		{
 			if (rc.canBuildRobot(type, spawnDirection))
 			{
@@ -234,7 +241,7 @@ public class GardenerBot extends Globals
 			}
 			else
 			{
-				spawnDirection = spawnDirection.rotateLeftDegrees(18);
+				spawnDirection = spawnDirection.rotateLeftDegrees(10);
 			}
 			tries++;
 		}

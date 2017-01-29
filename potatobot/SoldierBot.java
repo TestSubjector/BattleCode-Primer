@@ -5,7 +5,7 @@ public class SoldierBot extends Globals
 {
 	public static void loop()throws GameActionException
 	{
-		if (ourInitialArchons[0].distanceTo(theirInitialArchons[0]) > 35f)
+		if (archonDistance < 35f)
 		{
 			movingDirection = here.directionTo(theirInitialArchons[0]);
 		}
@@ -18,57 +18,20 @@ public class SoldierBot extends Globals
 				findMoveDirection();
 				
 				// movingDirection decided, now tryToMove
-				if (!tryToMove(movingDirection) || movedBack)
+				if (!tryToMove(movingDirection))
 				{
-					patience--;
-					if (patience <= -30)
-					{
-						movingDirection = movingDirection.opposite();
-						patience = 10;
-					}
-					if (patience <= 0)
-					{
-						if (neutralTrees.length != 0)
-						{
-							TreeInfo tree = neutralTrees[0];
-							MapLocation closestTreeLocation = tree.getLocation();
-							Direction shotDirection = here.directionTo(closestTreeLocation);
-							float treeDistance = tree.getLocation().distanceTo(here);
-							if (rc.canFireSingleShot())
-							{
-								boolean killingFriend = false;
-								int loopLength = allies.length;
-								for(int i = 0; i < loopLength; i++)
-								{
-									RobotInfo ally = allies[i];
-									if (ally.getLocation().distanceTo(here) < treeDistance)
-									{
-										if (willHitBody(ally, shotDirection, here))
-										{
-											killingFriend = true;
-											break;
-										}
-									}
-									else
-									{
-										break;
-									}
-								}
-								if (!killingFriend)
-								{
-									if (rc.canFireSingleShot())
-									{
-										rc.fireSingleShot(shotDirection);
-									}
-								}
-							}
-						}
-					}
+					doPatienceThings();
+					movingDirection = randomDirection();
+				}
+				else if (movedBack)
+				{
+					doPatienceThings();
 				}
 				else
 				{
 					patience = 30;
 				}
+				
 				shootClosestEnemy();
 				
 				footer();
@@ -101,9 +64,53 @@ public class SoldierBot extends Globals
 				movingDirection = here.directionTo(enemyTargetLocation);
 			}
 		}
-		else
+	}
+	
+	public static void doPatienceThings()throws GameActionException
+	{
+		patience--;
+		if (patience <= -30)
 		{
-			movingDirection = randomDirection();
+			movingDirection = movingDirection.opposite();
+			patience = 10;
+		}
+		if (patience <= 0)
+		{
+			if (neutralTrees.length != 0)
+			{
+				TreeInfo tree = neutralTrees[0];
+				MapLocation closestTreeLocation = tree.getLocation();
+				Direction shotDirection = here.directionTo(closestTreeLocation);
+				float treeDistance = tree.getLocation().distanceTo(here);
+				if (rc.canFireSingleShot())
+				{
+					boolean killingFriend = false;
+					int loopLength = allies.length;
+					for(int i = 0; i < loopLength; i++)
+					{
+						RobotInfo ally = allies[i];
+						if (ally.getLocation().distanceTo(here) < treeDistance)
+						{
+							if (willHitBody(ally, shotDirection, here))
+							{
+								killingFriend = true;
+								break;
+							}
+						}
+						else
+						{
+							break;
+						}
+					}
+					if (!killingFriend)
+					{
+						if (rc.canFireSingleShot())
+						{
+							rc.fireSingleShot(shotDirection);
+						}
+					}
+				}
+			}
 		}
 	}
 	

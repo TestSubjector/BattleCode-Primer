@@ -18,17 +18,7 @@ public class LumberjackBot extends Globals
 				{
 					if (!tryToMove(movingDirection))
 					{
-						// Replace with pathing later
-						float angle = ((float)Math.random() * 90f);
-						double choice = Math.random();
-						if (choice > 0.5)
-						{
-							movingDirection = movingDirection.opposite().rotateLeftDegrees(angle);
-						}
-						else
-						{
-							movingDirection = movingDirection.opposite().rotateRightDegrees(angle);
-						}
+						movingDirection = randomDirection();
 					}
 				}
 				footer();
@@ -68,10 +58,6 @@ public class LumberjackBot extends Globals
 		{
 			TreeInfo closestNeutralTree = neutralTrees[0];
 			movingDirection = here.directionTo(closestNeutralTree.getLocation());
-		}
-		else
-		{
-			movingDirection = randomDirection();
 		}
 	}
 	
