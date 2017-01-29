@@ -231,7 +231,7 @@ public class GardenerBot extends Globals
 		{
 			spawnDirection = here.directionTo(neutralTrees[0].getLocation());
 		}
-		while (tries < 20)
+		while (tries < 36)
 		{
 			if (rc.canBuildRobot(type, spawnDirection))
 			{
@@ -241,7 +241,7 @@ public class GardenerBot extends Globals
 			}
 			else
 			{
-				spawnDirection = spawnDirection.rotateLeftDegrees(18);
+				spawnDirection = spawnDirection.rotateLeftDegrees(10);
 			}
 			tries++;
 		}

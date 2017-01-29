@@ -58,8 +58,8 @@ public class ArchonBot extends Globals
 	public static boolean tryHiringGardener()throws GameActionException
 	{
 		int tries = 0;
-		Direction hireDirection = randomDirection();
-		while (tries < 45)
+		Direction hireDirection = here.directionTo(theirInitialArchons[0]);
+		while (tries < 36)
 		{
 			if (rc.canHireGardener(hireDirection))
 			{
@@ -68,7 +68,7 @@ public class ArchonBot extends Globals
 			}
 			else
 			{
-				hireDirection.rotateLeftDegrees(8);
+				hireDirection.rotateLeftDegrees(10);
 			}
 			tries++;
 		}
