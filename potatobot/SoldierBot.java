@@ -31,18 +31,27 @@ public class SoldierBot extends Globals
 					{
 						if (neutralTrees.length != 0)
 						{
-							MapLocation closestTreeLocation = neutralTrees[0].getLocation();
+							TreeInfo tree = neutralTrees[0];
+							MapLocation closestTreeLocation = tree.getLocation();
 							Direction shotDirection = here.directionTo(closestTreeLocation);
+							float treeDistance = tree.getLocation().distanceTo(here);
 							if (rc.canFireSingleShot())
 							{
 								boolean killingFriend = false;
 								int loopLength = allies.length;
-								for(int i = 0; i<loopLength;i++)
+								for(int i = 0; i < loopLength; i++)
 								{
 									RobotInfo ally = allies[i];
-									if (willHitRobot(ally, shotDirection, here) && ally.getLocation().distanceTo(here) < closestTreeLocation.distanceTo(here))
+									if (ally.getLocation().distanceTo(here) < treeDistance)
 									{
-										killingFriend = true;
+										if (willHitBody(ally, shotDirection, here))
+										{
+											killingFriend = true;
+											break;
+										}
+									}
+									else
+									{
 										break;
 									}
 								}
@@ -86,7 +95,7 @@ public class SoldierBot extends Globals
 				for (int i = 1; i <= numberOfAllyFarmLocations; i++)
 				{
 					int hashedLocation = rc.readBroadcast(FARM_LOCATIONS_CHANNELS[i]);
-					if (hashedLocation == -1)
+					if (hashedLocation == 0)
 					{
 						continue;
 					}
@@ -120,15 +129,16 @@ public class SoldierBot extends Globals
 			MapLocation enemyLocation = enemies[0].getLocation();
 			movingDirection = here.directionTo(enemyLocation);
 		}
-		else if (enemyTarget != -1)
+		else if (enemyTarget != 0)
 		{
 			if (rc.canSenseLocation(enemyTargetLocation) && !rc.canSenseRobot(enemyTarget))
 			{
-				enemyTarget = -1;
+				enemyTarget = 0;
 				movingDirection = randomDirection();
 			}
 			else
 			{
+				// rc.setIndicatorLine(here, enemyTargetLocation, 255, 0, 0);
 				movingDirection = here.directionTo(enemyTargetLocation);
 			}
 		}

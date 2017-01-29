@@ -45,6 +45,7 @@ public class LumberjackBot extends Globals
 	{
 		if (importantTreeTarget != 0)
 		{
+			// rc.setIndicatorLine(importantTreeTargetLocation, here, 255, 255, 0);
 			movingDirection = here.directionTo(importantTreeTargetLocation);
 		}
 		else if (enemies.length != 0)

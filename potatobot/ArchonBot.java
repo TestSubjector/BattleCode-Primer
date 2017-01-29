@@ -22,9 +22,9 @@ public class ArchonBot extends Globals
 				Direction awayFromNearestObstacle = findDirectionAwayFromNearestObstacle(array);		
 				
 				// Use TreeDensity after Akhil is done with the maths
-				if (rc.getBuildCooldownTurns() <= 0 && bullets > 151 && (soldiers >= 1 || gardeners < 1))
+				if (rc.getBuildCooldownTurns() <= 0 && (soldiers >= 1 || gardeners < 1))
 				{
-					if (tryHiringGardener())
+					if ((gardeners < 2  || neutralTrees.length < 20) && tryHiringGardener())
 					{
 						robotInit(RobotType.GARDENER);
 					}

@@ -40,7 +40,7 @@ public class TankBot extends Globals
 								for(int i = 0; i<loopLength;i++)
 								{
 									RobotInfo ally = allies[i];
-									if (willHitRobot(ally, shotDirection, here) && ally.getLocation().distanceTo(here) < closestTreeLocation.distanceTo(here))
+									if (willHitBody(ally, shotDirection, here) && ally.getLocation().distanceTo(here) < closestTreeLocation.distanceTo(here))
 									{
 										killingFriend = true;
 										break;
@@ -86,7 +86,7 @@ public class TankBot extends Globals
 				for (int i = 1; i <= numberOfAllyFarmLocations; i++)
 				{
 					int hashedLocation = rc.readBroadcast(FARM_LOCATIONS_CHANNELS[i]);
-					if (hashedLocation == -1)
+					if (hashedLocation == 0)
 					{
 						continue;
 					}
@@ -120,11 +120,11 @@ public class TankBot extends Globals
 			MapLocation enemyLocation = enemies[0].getLocation();
 			movingDirection = here.directionTo(enemyLocation);
 		}
-		else if (enemyTarget != -1)
+		else if (enemyTarget != 0)
 		{
 			if (rc.canSenseLocation(enemyTargetLocation) && !rc.canSenseRobot(enemyTarget))
 			{
-				enemyTarget = -1;
+				enemyTarget = 0;
 				movingDirection = randomDirection();
 			}
 			else

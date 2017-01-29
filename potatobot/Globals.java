@@ -55,22 +55,18 @@ public class Globals
 	public static int[] ENEMY_ARCHONS_CHANNELS;
 	
 	/* The enemy archon channels represent:
-	 * 43 = Number of enemy Archons seen
-	 * 44 = ID of 1st detected enemy Archon
-	 * 45 = Last known (hashed) location of the 1st detected enemy Archon
-	 * 46 = ID of the 2nd detected enemy Archon
-	 * 47 = Last known (hashed) location of the 2nd detected enemy Archon
-	 * 48 = ID of the 3rd detected enemy Archon
-	 * 49 = Last known (hashed) location of the 3rd detected enemy Archon
-	 * 50 = Round Number of the most recent encounter with an enemy Archon
+	 * 43 = Number of enemy Archons seen (deprecated)
+	 * {44, 45, 46} - {50, 51, 52} = {ID of nth detected Archon, (hashed) location of the nth detected Archon, Round Number it was last seen}
+	 * {53, 54, 55} = Buffer Channels
+	 * 56 = Index of first 0 location
 	 */
 
 	public static int[] IMPORTANT_TREES_CHANNELS;
 	/* The important trees channels represent:
-	 * 100 = Number of important trees seen
+	 * 100 = Number of important trees seen (deprecated)
 	 * {101, 102} - {119, 120} = {ID of nth detected important tree, (hashed) location of the nth detected tree}
 	 * {121, 122} = Buffer Channels
-	 * 123 = first 0 location
+	 * 123 = Index of first 0 location
 	 */
 	
 	public static int[] FARM_LOCATIONS_CHANNELS;
@@ -81,9 +77,10 @@ public class Globals
 	
 	public static int[] ENEMY_GARDENERS_CHANNELS;
 	/* The gardener locations channels represent:
-	 * 700 = Number of enemy Gardeners seen
-	 * {701, 702} - {899, 900} = {ID of nth detected enemy Gardener, (hashed) location of the nth detected enemy Gardener}
-	 * 901 = Round Number of the most recent encounter with an enemy Gardener
+	 * 700 = Number of enemy Gardeners seen (deprecated)
+	 * {701, 702, 703} - {728, 729, 730} = {ID of nth detected enemy Gardener, (hashed) location of the nth detected enemy Gardener, Round Number it was last seen}
+	 * {731, 732, 733} = Buffer Channels
+	 * 734 = Index of first 0 location
 	 */
 	
 	// End Broadcast Channels
@@ -114,7 +111,7 @@ public class Globals
 		updateNonAllyTreeDensity();
 		numberOfArchons = theirInitialArchons.length;
 		treesPlanted = 0;
-		enemyTarget = -1;
+		enemyTarget = 0;
 		enemyTargetLocation = null;
 		enemyTargetDistance = 5000000f;
 		importantTreeTarget = 0;
@@ -150,13 +147,13 @@ public class Globals
 	
 	public static void initChannels()
 	{
-		ENEMY_GARDENERS_CHANNELS = new int[202];
-		for (int i = 700; i <= 901; i++)
+		ENEMY_GARDENERS_CHANNELS = new int[36];
+		for (int i = 700; i <= 735; i++)
 		{
 			ENEMY_GARDENERS_CHANNELS[i - 700] = i;
 		}
-		ENEMY_ARCHONS_CHANNELS = new int[9];
-		for (int i = 43; i <= 50; i++)
+		ENEMY_ARCHONS_CHANNELS = new int[14];
+		for (int i = 43; i <= 56; i++)
 		{
 			ENEMY_ARCHONS_CHANNELS[i - 43] = i;
 		}
@@ -321,103 +318,104 @@ public class Globals
 		}
 	}
 	
-	private static void updateEnemies()throws GameActionException 
+	public static void updateEnemies()throws GameActionException
 	{
-		int enemyGardeners = rc.readBroadcast(ENEMY_GARDENERS_CHANNELS[0]);
-		int[][] enemyGardenersRead = new int[enemyGardeners][2];
-		int numberOfEnemyGardenersRead = 0;
-		for (int i = 1; i < enemyGardeners * 2; i += 2)
-		{
-			int readID = rc.readBroadcast(ENEMY_GARDENERS_CHANNELS[i]);
-			int hashedLocation = rc.readBroadcast(ENEMY_GARDENERS_CHANNELS[i + 1]);
-			if (hashedLocation != -1)
-			{
-				MapLocation unhashedLocation = unhashIt(hashedLocation);
-				if (enemyTarget == -1 || here.distanceTo(unhashedLocation) < enemyTargetDistance)
-				{
-					enemyTarget = readID;
-					enemyTargetLocation = unhashedLocation;
-					enemyTargetDistance = here.distanceTo(enemyTargetLocation);
-				}
-				if (rc.canSenseLocation(unhashedLocation) && !rc.canSenseRobot(readID))
-				{
-					rc.broadcast(ENEMY_GARDENERS_CHANNELS[i + 1], -1);
-				}
-				else
-				{
-					enemyGardenersRead[numberOfEnemyGardenersRead][0] = readID;
-					enemyGardenersRead[numberOfEnemyGardenersRead++][1] = i;
-				}
-			}
-		}
-
-		int enemyArchons = rc.readBroadcast(ENEMY_ARCHONS_CHANNELS[0]);
-		int[][] enemyArchonsRead = new int[enemyArchons][2];
-		int numberOfEnemyArchonsRead = 0;
-		for (int i = 1; i < enemyArchons * 2; i += 2)
+		int archonChannelLength = ENEMY_ARCHONS_CHANNELS.length;
+		int gardenerChannelLength = ENEMY_GARDENERS_CHANNELS.length;
+		
+		int[][] archonsRead = new int[3][2];
+		int numberOfArchonsRead = 0;
+		boolean found = false;
+		int i;
+		for (i = 1; i < 9; i += 3)
 		{
 			int readID = rc.readBroadcast(ENEMY_ARCHONS_CHANNELS[i]);
 			int hashedLocation = rc.readBroadcast(ENEMY_ARCHONS_CHANNELS[i + 1]);
-			if (hashedLocation != -1)
+			int roundLastSeen = rc.readBroadcast(ENEMY_ARCHONS_CHANNELS[i + 2]);
+			if (hashedLocation != 0)
 			{
 				MapLocation unhashedLocation = unhashIt(hashedLocation);
-				if (enemyTarget == -1 || here.distanceTo(unhashedLocation) < enemyTargetDistance)
+				if (enemyTarget == 0 || here.distanceTo(unhashedLocation) < enemyTargetDistance)
 				{
 					enemyTarget = readID;
 					enemyTargetLocation = unhashedLocation;
 					enemyTargetDistance = here.distanceTo(enemyTargetLocation);
 				}
-				if (rc.canSenseLocation(unhashedLocation) && !rc.canSenseRobot(readID))
+				if (roundNum - roundLastSeen > 50)
 				{
-					rc.broadcast(ENEMY_ARCHONS_CHANNELS[i + 1], -1);
+					rc.broadcast(ENEMY_ARCHONS_CHANNELS[i + 1], 0);
+					if (enemyTarget == readID)
+					{
+						enemyTarget = 0;
+						enemyTargetDistance = 500000f;
+					}
 				}
 				else
 				{
-					enemyArchonsRead[numberOfEnemyArchonsRead][0] = readID;
-					enemyArchonsRead[numberOfEnemyArchonsRead++][1] = i;
+					archonsRead[numberOfArchonsRead][0] = readID;
+					archonsRead[numberOfArchonsRead++][1] = i;
 				}
+			}
+			else if (!found)
+			{
+				found = true;
+				rc.broadcast(ENEMY_ARCHONS_CHANNELS[archonChannelLength - 1], i);
 			}
 		}
-		int loopLength = enemies.length;
-		for(int i = 0; i<loopLength;i++)
+		
+		int[][] gardenersRead = new int[10][2];
+		int numberOfGardenersRead = 0;
+		found = false;
+		for (i = 1; i < 30; i += 3)
 		{
-			RobotInfo enemy = enemies[i];
-			int ID = enemy.getID();
-			if (enemy.getType() == RobotType.GARDENER)
+			int readID = rc.readBroadcast(ENEMY_GARDENERS_CHANNELS[i]);
+			int hashedLocation = rc.readBroadcast(ENEMY_GARDENERS_CHANNELS[i + 1]);
+			int roundLastSeen = rc.readBroadcast(ENEMY_GARDENERS_CHANNELS[i + 2]);
+			if (hashedLocation != 0)
 			{
-				rc.broadcast(ENEMY_GARDENERS_CHANNELS[ENEMY_GARDENERS_CHANNELS.length - 1], roundNum);
-				int hashedLocation = hashIt(enemy.getLocation());
-				boolean found = false;
-				int j;
-				for (j = 0; j < numberOfEnemyGardenersRead; j++)
+				MapLocation unhashedLocation = unhashIt(hashedLocation);
+				if (enemyTarget == 0 || here.distanceTo(unhashedLocation) < enemyTargetDistance)
 				{
-					if (enemyGardenersRead[j][0] == ID)
-					{
-						found = true;
-						break;
-					}
+					enemyTarget = readID;
+					enemyTargetLocation = unhashedLocation;
+					enemyTargetDistance = here.distanceTo(enemyTargetLocation);
 				}
-				if (!found)
+				if (roundNum - roundLastSeen > 50)
 				{
-					rc.broadcast(ENEMY_GARDENERS_CHANNELS[enemyGardeners * 2 + 1], ID);
-					rc.broadcast(ENEMY_GARDENERS_CHANNELS[enemyGardeners * 2 + 2], hashedLocation);
-					enemyGardeners++;
-					rc.broadcast(ENEMY_GARDENERS_CHANNELS[0], enemyGardeners);
+					rc.broadcast(ENEMY_GARDENERS_CHANNELS[i + 1], 0);
+					if (enemyTarget == readID)
+					{
+						enemyTarget = 0;
+						enemyTargetDistance = 500000f;
+					}
 				}
 				else
 				{
-					rc.broadcast(ENEMY_GARDENERS_CHANNELS[enemyGardenersRead[j][1] + 1], hashedLocation);
+					gardenersRead[numberOfGardenersRead][0] = readID;
+					gardenersRead[numberOfGardenersRead++][1] = i;
 				}
 			}
-			else if (enemy.getType() == RobotType.ARCHON)
+			else if (!found)
 			{
-				rc.broadcast(ENEMY_ARCHONS_CHANNELS[ENEMY_ARCHONS_CHANNELS.length - 1], roundNum);
-				int hashedLocation = hashIt(enemy.getLocation());
-				boolean found = false;
-				int j;
-				for (j = 0; j < numberOfEnemyArchonsRead; j++)
+				found = true;
+				rc.broadcast(ENEMY_GARDENERS_CHANNELS[gardenerChannelLength - 1], i);
+			}
+		}
+		
+		int limit = Math.min(enemies.length, 30);
+		for(i = 0; i < limit; i++)
+		{
+			RobotInfo enemy = enemies[i];
+			MapLocation enemyLocation = enemy.getLocation();
+			int enemyID = enemy.getID();
+			RobotType enemyType = enemy.getType();
+			int j, k;
+			if (enemyType == RobotType.ARCHON)
+			{
+				found = false;
+				for (k = 0; k < numberOfArchonsRead; k++)
 				{
-					if (enemyArchonsRead[j][0] == ID)
+					if (archonsRead[k][0] == enemyID)
 					{
 						found = true;
 						break;
@@ -425,14 +423,62 @@ public class Globals
 				}
 				if (!found)
 				{
-					rc.broadcast(ENEMY_ARCHONS_CHANNELS[enemyArchons * 2 + 1], ID);
-					rc.broadcast(ENEMY_ARCHONS_CHANNELS[enemyArchons * 2 + 2], hashedLocation);
-					enemyArchons++;
-					rc.broadcast(ENEMY_ARCHONS_CHANNELS[0], enemyArchons);
+					int index = rc.readBroadcast(ENEMY_ARCHONS_CHANNELS[archonChannelLength - 1]);
+					if (index == 10)
+					{
+						// This ain't never gonna happen
+						System.out.println("Lite");
+					}
+					else
+					{
+						int hashedLocation = hashIt(enemyLocation);
+						rc.broadcast(ENEMY_ARCHONS_CHANNELS[index], enemyID);
+						rc.broadcast(ENEMY_ARCHONS_CHANNELS[index + 1], hashedLocation);
+						rc.broadcast(ENEMY_ARCHONS_CHANNELS[index + 2], roundNum);
+						rc.broadcast(ENEMY_ARCHONS_CHANNELS[archonChannelLength - 1], index + 3);
+					}
 				}
 				else
 				{
-					rc.broadcast(ENEMY_ARCHONS_CHANNELS[enemyArchonsRead[j][1] + 1], hashedLocation);
+					int index = gardenersRead[k][1];
+					int hashedLocation = hashIt(enemyLocation);
+					rc.broadcast(ENEMY_ARCHONS_CHANNELS[index + 1], hashedLocation);
+					rc.broadcast(ENEMY_ARCHONS_CHANNELS[index + 2], roundNum);
+				}
+			}
+			if (enemyType == RobotType.GARDENER)
+			{
+				found = false;
+				for (j = 0; j < numberOfGardenersRead; j++)
+				{
+					if (gardenersRead[j][0] == enemyID)
+					{
+						found = true;
+						break;
+					}
+				}
+				if (!found)
+				{
+					int index = rc.readBroadcast(ENEMY_GARDENERS_CHANNELS[gardenerChannelLength - 1]);
+					if (index == 31)
+					{
+						System.out.println("Lite");
+					}
+					else
+					{
+						int hashedLocation = hashIt(enemyLocation);
+						rc.broadcast(ENEMY_GARDENERS_CHANNELS[index], enemyID);
+						rc.broadcast(ENEMY_GARDENERS_CHANNELS[index + 1], hashedLocation);
+						rc.broadcast(ENEMY_GARDENERS_CHANNELS[index + 2], roundNum);
+						rc.broadcast(ENEMY_GARDENERS_CHANNELS[gardenerChannelLength - 1], index + 3);
+					}
+				}
+				else
+				{
+					int index = gardenersRead[j][1];
+					int hashedLocation = hashIt(enemyLocation);
+					rc.broadcast(ENEMY_GARDENERS_CHANNELS[index + 1], hashedLocation);
+					rc.broadcast(ENEMY_GARDENERS_CHANNELS[index + 2], roundNum);
 				}
 			}
 		}
@@ -440,14 +486,12 @@ public class Globals
 	
 	public static void updateTrees()throws GameActionException
 	{
-		System.out.println("Update Trees : ");
-		System.out.println(Clock.getBytecodesLeft());
+		int impChannelLength = IMPORTANT_TREES_CHANNELS.length;
 		int[] treesRead = new int[10];
 		int numberOfTreesRead = 0;
 		boolean found = false;
 		for (int i = 1; i < 20; i += 2)
 		{
-			System.out.println("start of reading broadcasts : " + Clock.getBytecodesLeft());
 			int readID = rc.readBroadcast(IMPORTANT_TREES_CHANNELS[i]);
 			int hashedLocation = rc.readBroadcast(IMPORTANT_TREES_CHANNELS[i + 1]);
 			if (hashedLocation != 0)
@@ -464,28 +508,25 @@ public class Globals
 					rc.broadcast(IMPORTANT_TREES_CHANNELS[i + 1], 0);
 					if (importantTreeTarget == readID)
 					{
-						importantTreeTarget = -1;
+						importantTreeTarget = 0;
 						importantTreeTargetDistance = 500000f;
 					}
 				}
 				else
 				{
-					treesRead[numberOfTreesRead] = readID;
+					treesRead[numberOfTreesRead++] = readID;
 				}
 			}
 			else if (!found)
 			{
 				found = true;
-				int impChannelLength = IMPORTANT_TREES_CHANNELS.length;
 				rc.broadcast(IMPORTANT_TREES_CHANNELS[impChannelLength - 1], i);
 			}
-			System.out.println("end of reading broadcasts : " + Clock.getBytecodesLeft());
 		}
 		
 		int limit = Math.min(neutralTrees.length, 30);
 		for(int i = 0; i < limit; i++)
 		{
-			System.out.println("start of scanning nearby tree : " + Clock.getBytecodesLeft());
 			TreeInfo tree = neutralTrees[i];
 			float r = tree.getRadius();
 			float area = (float)Math.PI * r * r;
@@ -513,19 +554,20 @@ public class Globals
 				}
 				if (!found)
 				{
-					int hashedLocation = hashIt(treeLocation);
-					int impChannelLength = IMPORTANT_TREES_CHANNELS.length;
 					int index = rc.readBroadcast(IMPORTANT_TREES_CHANNELS[impChannelLength - 1]);
 					if (index == 21)
 					{
 						System.out.println("Lite");
 					}
-					rc.broadcast(IMPORTANT_TREES_CHANNELS[index], treeID);
-					rc.broadcast(IMPORTANT_TREES_CHANNELS[index + 1], hashedLocation);
-					rc.broadcast(IMPORTANT_TREES_CHANNELS[impChannelLength - 1], 21);
+					else
+					{
+						int hashedLocation = hashIt(treeLocation);
+						rc.broadcast(IMPORTANT_TREES_CHANNELS[index], treeID);
+						rc.broadcast(IMPORTANT_TREES_CHANNELS[index + 1], hashedLocation);
+						rc.broadcast(IMPORTANT_TREES_CHANNELS[impChannelLength - 1], index + 2);
+					}
 				}
 			}
-			System.out.println("end of scanning nearby tree : " + Clock.getBytecodesLeft());
 		}
 		int loopLength = enemyTrees.length;
 		for(int i = 0; i < loopLength; i++)
@@ -535,8 +577,6 @@ public class Globals
 			float area = (float)Math.PI * r * r;
 			nonAllyTreeArea += area;
 		}
-
-		System.out.println("end of updateTrees : " + Clock.getBytecodesLeft());
 	}
 	// Updation functions end here
 	
@@ -550,7 +590,7 @@ public class Globals
 			return false;
 		}
 		int loopLength = tryAngles.length;
-		for(int i = 0; i<loopLength;i++)
+		for(int i = 0; i < loopLength; i++)
 		{
 			int angle = tryAngles[i];
 			Direction candidateDirection = movingDirection.rotateLeftDegrees(angle);
@@ -571,7 +611,7 @@ public class Globals
 			return false;
 		}
 		int loopLength = tryAngles.length;
-		for(int i = 0; i<loopLength;i++)
+		for(int i = 0; i < loopLength; i++)
 		{
 			int angle = tryAngles[i];
 			Direction candidateDirection = movingDirection.rotateLeftDegrees(angle);
@@ -631,7 +671,7 @@ public class Globals
 		if (!(myType == RobotType.LUMBERJACK))
 		{
 			int loopLength = enemies.length;
-			for(int i = 0; i<loopLength;i++)
+			for(int i = 0; i < loopLength; i++)
 			{
 				RobotInfo enemy = enemies[i];
 				RobotType enemyType = enemy.getType();
@@ -651,7 +691,7 @@ public class Globals
 			Direction bulletDirection = sensedBullet.getDir();
 			MapLocation bulletLocation = sensedBullet.getLocation();
 			// rc.setIndicatorLine(bulletLocation, bulletLocation.add(bulletDirection, 2.5f), 0, 0, 255);
-			if (willHitRobot(me, bulletDirection, bulletLocation))
+			if (willHitBody(me, bulletDirection, bulletLocation))
 			{
 				if (sideStep(bulletDirection))
 				{
@@ -674,19 +714,19 @@ public class Globals
 		return angle;
 	}
 	
-	public static boolean willHitRobot(RobotInfo robot, Direction shotDirection, MapLocation shotFrom)throws GameActionException
+	public static boolean willHitBody(BodyInfo body, Direction shotDirection, MapLocation shotFrom)throws GameActionException
 	{
-		float distanceToCentre = shotFrom.distanceTo(robot.getLocation());
-		Direction robotDirection = shotFrom.directionTo(robot.getLocation());
-		float radiansBetween = shotDirection.radiansBetween(robotDirection);
+		float distanceToCentre = shotFrom.distanceTo(body.getLocation());
+		Direction bodyDirection = shotFrom.directionTo(body.getLocation());
+		float radiansBetween = shotDirection.radiansBetween(bodyDirection);
 		if (Math.abs(radiansBetween) > maxHitAngle)
 		{
 			return false;
 		}
-		float robotRadius = robot.getRadius();
+		float bodyRadius = body.getRadius();
 		float tan = (float)Math.tan(Math.abs(radiansBetween));
 		float distanceFromCentre = (float) (distanceToCentre * tan);
-		if (distanceFromCentre < robotRadius)
+		if (distanceFromCentre < bodyRadius)
 		{
 			return true;
 		}
@@ -701,17 +741,43 @@ public class Globals
 			// Direction shotDirection = directionToCentre;
 			// rc.setIndicatorLine(here, enemy.getLocation(), 0, 255, 0);
 			boolean killingFriend = false;
+			boolean killingTree = false;
 			int loopLength = allies.length;
-			for(int i = 0; i<loopLength;i++)
+			float enemyDistance = enemy.getLocation().distanceTo(here);
+			for(int i = 0; i < loopLength; i++)
 			{
 				RobotInfo ally = allies[i];
-				if (willHitRobot(ally, directionToCentre, here) && ally.getLocation().distanceTo(here) < enemy.getLocation().distanceTo(here))
+				if (ally.getLocation().distanceTo(here) < enemyDistance)
 				{
-					killingFriend = true;
+					if (willHitBody(ally, directionToCentre, here))
+					{
+						killingFriend = true;
+						break;
+					}
+				}
+				else
+				{
 					break;
 				}
 			}
-			if (!killingFriend)
+			loopLength = neutralTrees.length;
+			for(int i = 0; i < loopLength; i++)
+			{
+				TreeInfo tree = neutralTrees[i];
+				if (tree.getLocation().distanceTo(here) < enemyDistance)
+				{
+					if (willHitBody(tree, directionToCentre, here))
+					{
+						killingTree = true;
+						break;
+					}
+				}
+				else
+				{
+					break;
+				}
+			}
+			if (!(killingFriend || killingTree))
 			{
 				if (rc.canFireSingleShot())
 				{
@@ -723,7 +789,8 @@ public class Globals
 		return false;
 	}
 	
-	public static boolean reviseTarget(boolean[] arr){
+	public static boolean reviseTarget(boolean[] arr)
+	{
 		//returns false if no change needed (i.e. shoot) else true if shoot has to be aborted
 		int true_count=0;
 		for(int i=0;i < arr.length;i++){
@@ -764,7 +831,7 @@ public class Globals
 		
 		if (rc.canFireTriadShot())
 		{
-			if(willHitRobot(RobotHit[1],shotDirections[0],here)||willHitRobot(RobotHit[1],shotDirections[2],here)){
+			if(willHitBody(RobotHit[1],shotDirections[0],here)||willHitBody(RobotHit[1],shotDirections[2],here)){
 				//2 out of 3 bullets hitting single enemy.
 				//Also means no need to check for allies in between due to proximity conditions
 				rc.fireTriadShot(shotDirections[1]);
@@ -774,12 +841,12 @@ public class Globals
 			for(int i = 0; i<loopLength;i++)
 			{
 				RobotInfo foe = enemies[i];
-				if(willHitRobot(foe,shotDirections[0],here) && RobotHit[0]==null){
+				if(willHitBody(foe,shotDirections[0],here) && RobotHit[0]==null){
 					//since 'enemies' array is ordered closest to farthest, the first assignment to
 					//leftHit will be one it actually hits
 					RobotHit[0] = foe;
 				}
-				if(willHitRobot(foe,shotDirections[2],here) && RobotHit[1]==null){
+				if(willHitBody(foe,shotDirections[2],here) && RobotHit[1]==null){
 					//same as above
 					RobotHit[2] = foe;
 				}
@@ -789,15 +856,15 @@ public class Globals
 			for(int i = 0; i<loopLength;i++)
 			{
 				RobotInfo ally = allies[i];
-				if(willHitRobot(ally,shotDirections[1],here) && ally.getLocation().distanceTo(here) < RobotHit[1].getLocation().distanceTo(here)){
+				if(willHitBody(ally,shotDirections[1],here) && ally.getLocation().distanceTo(here) < RobotHit[1].getLocation().distanceTo(here)){
 					//hitting ally not enemy
 					friendHit[1]=true;
 				}
-				if(willHitRobot(ally,shotDirections[0],here) && RobotHit[0] != null && ally.getLocation().distanceTo(here) < RobotHit[0].getLocation().distanceTo(here)){
+				if(willHitBody(ally,shotDirections[0],here) && RobotHit[0] != null && ally.getLocation().distanceTo(here) < RobotHit[0].getLocation().distanceTo(here)){
 					//hitting ally not enemy
 					friendHit[0]=true;
 				}
-				if(willHitRobot(ally,shotDirections[2],here) && RobotHit[2] != null && ally.getLocation().distanceTo(here) < RobotHit[2].getLocation().distanceTo(here)){
+				if(willHitBody(ally,shotDirections[2],here) && RobotHit[2] != null && ally.getLocation().distanceTo(here) < RobotHit[2].getLocation().distanceTo(here)){
 					//hitting ally not enemy
 					friendHit[2]=true;
 				}
@@ -813,7 +880,8 @@ public class Globals
 	}
 	
 	public static boolean tryPentadShot(RobotInfo enemy)throws GameActionException
-	{	// all arrays are leftmost to rightmost. So, [2] is the centreDirection|Bot 
+	{	
+		// all arrays are leftmost to rightmost. So, [2] is the centreDirection|Bot 
 		Direction[] shotDirections = {null,null,here.directionTo(enemy.getLocation()),null,null};
 		shotDirections[1] = shotDirections[2].rotateLeftDegrees(GameConstants.PENTAD_SPREAD_DEGREES);
 		shotDirections[0] = shotDirections[1].rotateLeftDegrees(GameConstants.PENTAD_SPREAD_DEGREES);
@@ -830,7 +898,7 @@ public class Globals
 			{
 				RobotInfo foe = enemies[j];
 				for(int i=0;i<5;i++){
-					if(willHitRobot(foe,shotDirections[i],here) && RobotHit[i]==null){
+					if(willHitBody(foe,shotDirections[i],here) && RobotHit[i]==null){
 						RobotHit[i] = foe;
 					}
 				}
@@ -841,7 +909,7 @@ public class Globals
 			{
 				RobotInfo ally = allies[j];
 				for(int i=0;i<5;i++){
-					if(willHitRobot(ally,shotDirections[i],here) && RobotHit[i] != null && ally.getLocation().distanceTo(here) < RobotHit[i].getLocation().distanceTo(here)){
+					if(willHitBody(ally,shotDirections[i],here) && RobotHit[i] != null && ally.getLocation().distanceTo(here) < RobotHit[i].getLocation().distanceTo(here)){
 						friendHit[i] = true;
 					}
 				}
@@ -863,32 +931,20 @@ public class Globals
 	
 	public static void header()throws GameActionException
 	{
-		System.out.println("Initial : " + Clock.getBytecodesLeft());
 		updateRoundNum();
-		System.out.println("roundNum : " + Clock.getBytecodesLeft());
 		updateBulletCount();
-		System.out.println("BulletCount : " + Clock.getBytecodesLeft());
 		doVictoryPointsCalculations();
-		System.out.println("VP : " + Clock.getBytecodesLeft());
 		updateNearbyBullets();
-		System.out.println("NearbyBullets : " + Clock.getBytecodesLeft());
 		updateRobotCount();
-		System.out.println("robotCount : " + Clock.getBytecodesLeft());
 		updateNearbyObjectLocations();
-		System.out.println("nearbyObjects : " + Clock.getBytecodesLeft());
 		tryToDodge();
-		System.out.println("dodge : " + Clock.getBytecodesLeft());
 		if (dying())
 		{
 			imDying();
 		}
-		System.out.println("dying : " + Clock.getBytecodesLeft());
 		updateEnemies();
-		System.out.println("updateEnemies : " + Clock.getBytecodesLeft());
 		updateTrees();
-		System.out.println("updateTrees : " + Clock.getBytecodesLeft());
 		updateNonAllyTreeDensity();
-		System.out.println("nonAllyTreeDensity : " + Clock.getBytecodesLeft());
 	}
 
 	// Footer to run at the end of each round

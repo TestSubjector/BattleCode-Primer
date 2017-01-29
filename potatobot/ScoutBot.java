@@ -12,27 +12,14 @@ public class ScoutBot extends Globals
 			try
 			{
 				header();
-				System.out.println("After header : " + Clock.getBytecodesLeft());
 				findMoveDirection();
-				System.out.println("After moveDirection : " + Clock.getBytecodesLeft());
 				
 				// movingDirection decided, now tryToMove
 				if (!tryToMove(movingDirection))
 				{
-					float angle = ((float)Math.random() * 90f);
-					double choice = Math.random();
-					if (choice > 0.5)
-					{
-						movingDirection = movingDirection.opposite().rotateLeftDegrees(angle);
-					}
-					else
-					{
-						movingDirection = movingDirection.opposite().rotateRightDegrees(angle);
-					}
+					movingDirection = randomDirection();
 				}
-				System.out.println("After tryToMove : " + Clock.getBytecodesLeft());
 				shootClosestEnemy();
-				System.out.println("After shootClosestEnemy : " + Clock.getBytecodesLeft());
 				footer();
 			}
 			catch (GameActionException e)
@@ -43,7 +30,7 @@ public class ScoutBot extends Globals
 		}
 	}
 
-	private static void shootClosestEnemy()throws GameActionException 
+	private static boolean shootClosestEnemy()throws GameActionException 
 	{
 
 		// look for the closest enemy and shoot
@@ -53,9 +40,10 @@ public class ScoutBot extends Globals
 			RobotInfo enemy = enemies[i];
 			if ((roundNum > 500 || enemy.getType() != RobotType.ARCHON)  && trySingleShot(enemy))
 			{
-				break;
+				return true;
 			}
 		}
+		return false;
 	}
 	
 
@@ -67,25 +55,16 @@ public class ScoutBot extends Globals
 			RobotType enemyType = enemy.getType();
 			MapLocation enemyLocation = enemy.getLocation();
 			movingDirection = here.directionTo(enemyLocation);
-			if ((enemyType == RobotType.SOLDIER || enemyType == RobotType.TANK || enemyType == RobotType.ARCHON))
+			if (enemyType == RobotType.SOLDIER || enemyType == RobotType.TANK)
 			{
-				float angle = 45;
-				double choice = Math.random();
-				if (choice > 0.5)
-				{
-					movingDirection = movingDirection.opposite().rotateLeftDegrees(angle);
-				}
-				else
-				{
-					movingDirection = movingDirection.opposite().rotateRightDegrees(angle);
-				}
+				movingDirection = enemyLocation.directionTo(here);
 			}
 		}
-		else if (enemyTarget != -1)
+		else if (enemyTarget != 0)
 		{
 			if (rc.canSenseLocation(enemyTargetLocation) && !rc.canSenseRobot(enemyTarget))
 			{
-				enemyTarget = -1;
+				enemyTarget = 0;
 				movingDirection = randomDirection();
 			}
 			else

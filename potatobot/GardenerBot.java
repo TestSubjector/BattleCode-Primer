@@ -77,7 +77,6 @@ public class GardenerBot extends Globals
 						tryToPlantUnplanned();
 						farmerMovingDirection = farmerMovingDirection.rotateLeftDegrees(51.43f);
 					}
-					System.out.println("After Unplanned Planting : " + Clock.getBytecodesLeft());
 				}
 				else
 				{
@@ -86,9 +85,7 @@ public class GardenerBot extends Globals
 						movingDirection = randomDirection();
 					}
 					tryToBuild();
-					System.out.println("After tryToBuild : " + Clock.getBytecodesLeft());
 				}
-				System.out.println("Before Footer : " + Clock.getBytecodesLeft());
 				footer();
 			}
 			catch (GameActionException e)
@@ -135,7 +132,6 @@ public class GardenerBot extends Globals
 		while (tries <= 10)
 		{
 			Direction plantDirection = farmerMovingDirection.rotateRightDegrees(85);
-			System.out.println("Planting : " + Clock.getBytecodesLeft());
             if (rc.canPlantTree(plantDirection))
 			{
             	rc.plantTree(plantDirection);
@@ -176,7 +172,7 @@ public class GardenerBot extends Globals
 	
 	private static boolean tryToBuild()throws GameActionException
 	{		
-		if (scouts < 2 || (scouts < Math.ceil((15d * roundNum) / 3000d)))
+		if (scouts < 2 || (scouts < Math.ceil((20d * roundNum) / 3000d)))
 		{
 			if (rc.hasRobotBuildRequirements(RobotType.SCOUT))
 			{
@@ -186,7 +182,7 @@ public class GardenerBot extends Globals
 		
 		// Replace stupidCondition with some other condition
 		
-		boolean stupidConditionForLumberjacks = lumberjacks <= scouts * 2;
+		boolean stupidConditionForLumberjacks = neutralTrees.length > 6 || lumberjacks < 2 ;
 		if (stupidConditionForLumberjacks && lumberjacks < 20)
 		{
 			if (rc.hasRobotBuildRequirements(RobotType.LUMBERJACK))
@@ -225,6 +221,10 @@ public class GardenerBot extends Globals
 		}
 		int tries = 0;
 		Direction spawnDirection = here.directionTo(theirInitialArchons[0]);
+		if (type == RobotType.LUMBERJACK && neutralTrees.length != 0)
+		{
+			spawnDirection = here.directionTo(neutralTrees[0].getLocation());
+		}
 		while (tries < 20)
 		{
 			if (rc.canBuildRobot(type, spawnDirection))
