@@ -43,7 +43,6 @@ public class Globals
 	public static float importantTreeTargetDistance;
 	public static boolean amFarmer;
 	public static int[] tryAngles;
-	public static int patience;
 	public static boolean movedBack;
 	public static boolean lastMoveWasPositive;
 	
@@ -124,7 +123,6 @@ public class Globals
 		importantTreeTargetDistance = 5000000f;
 		initTryAngles();
 		initChannels();
-		patience = 30;
 		movedBack = false;
 		lastMoveWasPositive = true;
 	}

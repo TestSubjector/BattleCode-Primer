@@ -3,13 +3,14 @@ import battlecode.common.*;
 
 public class GardenerBot extends Globals
 {
-	// private static int treesIPlanted = 0;
+	private static int treesIPlanted = 0;
 	private static boolean amFirstGardener = false;
 	private static RobotType typeToSpawnFirst;
 	private static Direction plantDirection;
 	public static void loop()throws GameActionException
 	{
 		int spawnRoundNum = rc.getRoundNum();
+		int maxICanPlant = 0;
 		amFarmer = shouldIBeAFarmer();
 		plantDirection = here.directionTo(theirInitialArchons[0]).rotateLeftDegrees(60);
 		if (amFarmer)
@@ -46,43 +47,17 @@ public class GardenerBot extends Globals
 				if (amFirstGardener)
 				{
 					tryToMove(awayFromNearestObstacle);
-					if (roundNum - spawnRoundNum < 2)
-					{
-						footer();
-						continue;
-					}
-					System.out.println(typeToSpawnFirst);
 					if (typeToSpawnFirst != null && spawn(typeToSpawnFirst))
 					{
-						if (typeToSpawnFirst.equals(RobotType.SCOUT))
+						typeToSpawnFirst = RobotType.SOLDIER;
+						if (roundNum - spawnRoundNum < 2)
 						{
-							if (neutralTrees.length > 5)
-							{
-								typeToSpawnFirst = RobotType.LUMBERJACK;
-							}
-							else
-							{
-								typeToSpawnFirst = RobotType.SOLDIER;
-							}
+							footer();
+							continue;
 						}
-						else if (typeToSpawnFirst.equals(RobotType.LUMBERJACK))
+						if (typeToSpawnFirst.equals(RobotType.SOLDIER))
 						{
-							typeToSpawnFirst = RobotType.SOLDIER;
-						}
-						else if (typeToSpawnFirst.equals(RobotType.SOLDIER))
-						{
-							if (archonDistance < 30f)
-							{
-								updateRobotCount();
-								if (soldiers >= 2)
-								{
-									typeToSpawnFirst = null;
-								}
-							}
-							else
-							{
-								typeToSpawnFirst = null;
-							}
+							typeToSpawnFirst = null;
 						}
 					}
 					if (typeToSpawnFirst == null)
@@ -92,14 +67,14 @@ public class GardenerBot extends Globals
 				}
 				else if (amFarmer)
 				{
-					if (roundNum - spawnRoundNum > 2)
+					if (roundNum - spawnRoundNum > 4)
 					{
 						if (rc.hasTreeBuildRequirements() && rc.getBuildCooldownTurns() <= 0)
 						{
 							tryToPlant();
 						}
 					}
-					else if (roundNum - spawnRoundNum == 2)
+					else if (roundNum - spawnRoundNum == 4)
 					{
 						int farmIndex = rc.readBroadcast(FARM_LOCATIONS_CHANNELS[0]);
 						rc.broadcast(FARM_LOCATIONS_CHANNELS[farmIndex + 1], hashIt(here));
@@ -112,8 +87,26 @@ public class GardenerBot extends Globals
 				}
 				else
 				{
-					tryToMove(awayFromNearestObstacle);
-					tryToBuild();
+					maxICanPlant = findMaxICanPlant();
+					if (roundNum - spawnRoundNum < 30)
+					{
+						tryToMove(awayFromNearestObstacle);
+						tryToBuild();
+					}
+					else if (maxICanPlant > 1)
+					{
+						if (roundNum - spawnRoundNum == 30)
+						{
+							int farmIndex = rc.readBroadcast(FARM_LOCATIONS_CHANNELS[0]);
+							rc.broadcast(FARM_LOCATIONS_CHANNELS[farmIndex + 1], hashIt(here));
+							rc.broadcast(FARM_LOCATIONS_CHANNELS[0], farmIndex + 1);
+						}
+						tryToPlant();
+					}
+					else if (roundNum - spawnRoundNum > 80)
+					{
+						tryToBuild();
+					}
 				}
 				footer();
 			}
@@ -125,8 +118,25 @@ public class GardenerBot extends Globals
 		}
 	}
 	
-	
+
+
 	// Farming functions 
+	
+	private static int findMaxICanPlant()throws GameActionException
+	{
+		Direction checkDirection = plantDirection;
+		int a = 0;
+		for (int i = 0; i < 6; i++)
+		{
+			if (!rc.isCircleOccupiedExceptByThisRobot(here.add(checkDirection, 2.2f), 1f))
+			{
+				a++;
+			}
+			checkDirection = checkDirection.rotateLeftDegrees(60);
+		}
+		System.out.println(a);
+		return a;
+	}
 	
 	private static boolean shouldIBeAFarmer()throws GameActionException
 	{
@@ -159,12 +169,12 @@ public class GardenerBot extends Globals
             if (rc.canPlantTree(plantDirection))
 			{
             	rc.plantTree(plantDirection);
-                // treesIPlanted++;
+                treesIPlanted++;
                 updateTreeCount();
                 rc.broadcast(TREE_CHANNEL, treesPlanted + 1);
                 return true;
 			}
-            plantDirection = plantDirection.rotateRightDegrees(60);
+            plantDirection = plantDirection.rotateLeftDegrees(60);
             tries++;
 		}
 		return false;

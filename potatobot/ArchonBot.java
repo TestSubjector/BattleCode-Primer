@@ -3,6 +3,7 @@ import battlecode.common.*;
 
 public class ArchonBot extends Globals
 {
+	public static Direction awayFromNearestObstacle; 
 	public static void loop()throws GameActionException
 	{
 		while (true)
@@ -18,13 +19,13 @@ public class ArchonBot extends Globals
 				System.out.println();
 				*/
 				BodyInfo[][] array = {enemies, allies, neutralTrees, enemyTrees, allyTrees};
-				Direction awayFromNearestObstacle = findDirectionAwayFromNearestObstacle(array);		
+				awayFromNearestObstacle = findDirectionAwayFromNearestObstacle(array);		
 				// rc.setIndicatorLine(here, here.add(awayFromNearestObstacle), 255, 255, 255);
 				// Use TreeDensity after Akhil is done with the maths
-				if (rc.getBuildCooldownTurns() <= 0 && (soldiers >= 1 || gardeners < 1 || roundNum > 75))
+				if (rc.getBuildCooldownTurns() <= 0)
 				{
 					System.out.println("1");
-					if ((gardeners < 2  || neutralTrees.length < 15) && gardeners <= gameProgressPercentage * 30 && tryHiringGardener())
+					if ((gardeners < 1  || neutralTrees.length < 15) && gardeners <= gameProgressPercentage * 30 && tryHiringGardener())
 					{
 						System.out.println("2");
 						robotInit(RobotType.GARDENER);
@@ -51,7 +52,7 @@ public class ArchonBot extends Globals
 	public static boolean tryHiringGardener()throws GameActionException
 	{
 		int tries = 0;
-		Direction hireDirection = here.directionTo(theirInitialArchons[0]);
+		Direction hireDirection = awayFromNearestObstacle;
 		while (tries < 90)
 		{
 			if (rc.canHireGardener(hireDirection))
