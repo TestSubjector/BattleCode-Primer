@@ -735,6 +735,18 @@ public class Globals
 		return tryToMove(here.directionTo(location));
 	}
 	
+	public static boolean backStep(Direction bulletDirection)throws GameActionException
+	{
+		Direction back = bulletDirection;
+		if (!rc.hasMoved() && rc.canMove(back))
+		{
+			rc.move(back);
+			updateLocation();
+			return true;
+		}
+		return tryToMove(back);
+	}
+	
 	public static boolean sideStep(Direction bulletDirection)throws GameActionException
 	{
 		Direction left = bulletDirection.rotateLeftDegrees(90);
@@ -789,8 +801,30 @@ public class Globals
 			}
 		}
 		RobotInfo me = new RobotInfo(myID, us, myType, here, rc.getHealth(), rc.getAttackCount(), rc.getMoveCount());
-		int loopLength = sensedBullets.length;
-		for(int i = 0; i<loopLength;i++)
+		int loopLength = Math.min(3, sensedBullets.length);
+		Direction centralBulletDirection = null;
+		MapLocation centralBulletLocation = null;
+		if (loopLength != 0)
+		{
+			centralBulletDirection = sensedBullets[0].getDir(); 
+			centralBulletLocation = sensedBullets[0].getLocation(); 
+		}
+		for(int i = 1; i < loopLength; i++)
+		{
+			double deviationFromCentre = Math.abs(sensedBullets[i].getDir().degreesBetween(centralBulletDirection));
+			if ((deviationFromCentre - GameConstants.TRIAD_SPREAD_DEGREES <= 0.01) || (deviationFromCentre - GameConstants.PENTAD_SPREAD_DEGREES <= 0.01))
+			{
+				if (willHitBody(me, centralBulletDirection, centralBulletLocation))
+				{
+					if (backStep(centralBulletDirection))
+					{
+						return;
+					}
+				}
+			}
+		}
+		loopLength = sensedBullets.length;
+		for(int i = 0; i < loopLength; i++)
 		{
 			BulletInfo sensedBullet = sensedBullets[i];
 			Direction bulletDirection = sensedBullet.getDir();
@@ -981,7 +1015,7 @@ public class Globals
 		float maxWeight = 0.0f;
 		final float SINGLE_ENEMY_WEIGHT = 3.0f, SINGLE_ALLY_WEIGHT = -1.2f, SINGLE_WASTE_WEIGHT = -0.4f;
 		final float TRIAD_ENEMY_WEIGHT = 7.5f, TRIAD_ALLY_WEIGHT = -3.0f, TRIAD_WASTE_WEIGHT = -1.0f;
-		final float PENTAD_ENEMY_WEIGHT = 9.0f, PENTAD_ALLY_WEIGHT = -4.8f, PENTAD_WASTE_WEIGHT = -1.2f;
+		final float PENTAD_ENEMY_WEIGHT = 10.0f, PENTAD_ALLY_WEIGHT = -4.8f, PENTAD_WASTE_WEIGHT = -1.2f;
 		
 		if(directionLimit == 7)
 		{
