@@ -3,7 +3,7 @@ import battlecode.common.*;
 
 public class GardenerBot extends Globals
 {
-	private static int treesIPlanted = 0;
+	// private static int treesIPlanted = 0;
 	private static boolean amFirstGardener = false;
 	private static RobotType typeToSpawnFirst;
 	private static Direction plantDirection;
@@ -15,19 +15,24 @@ public class GardenerBot extends Globals
 		if (amFarmer)
 		{
 			updateRobotCount();
+			updateNearbyObjects();
 			rc.broadcast(farmerIndex, farmers + 1);
 			if (robotCount[farmerIndex] == 0)
 			{
 				amFirstGardener = true;
 			}
-		}
-		if (archonDistance < 35f)
-		{
-			typeToSpawnFirst = RobotType.SOLDIER;
-		}
-		else
-		{
-			typeToSpawnFirst = RobotType.SCOUT;
+			if (neutralTrees.length > 10)
+			{
+				typeToSpawnFirst = RobotType.LUMBERJACK;
+			}
+			else if (archonDistance < 30f)
+			{
+				typeToSpawnFirst = RobotType.SOLDIER;
+			}
+			else
+			{
+				typeToSpawnFirst = RobotType.SCOUT;
+			}
 		}
 		while (true)
 		{
@@ -41,6 +46,11 @@ public class GardenerBot extends Globals
 				if (amFirstGardener)
 				{
 					tryToMove(awayFromNearestObstacle);
+					if (roundNum - spawnRoundNum < 2)
+					{
+						footer();
+						continue;
+					}
 					System.out.println(typeToSpawnFirst);
 					if (typeToSpawnFirst != null && spawn(typeToSpawnFirst))
 					{
@@ -61,7 +71,7 @@ public class GardenerBot extends Globals
 						}
 						else if (typeToSpawnFirst.equals(RobotType.SOLDIER))
 						{
-							if (archonDistance < 35f)
+							if (archonDistance < 30f)
 							{
 								updateRobotCount();
 								if (soldiers >= 2)
@@ -149,7 +159,7 @@ public class GardenerBot extends Globals
             if (rc.canPlantTree(plantDirection))
 			{
             	rc.plantTree(plantDirection);
-                treesIPlanted++;
+                // treesIPlanted++;
                 updateTreeCount();
                 rc.broadcast(TREE_CHANNEL, treesPlanted + 1);
                 return true;
@@ -234,12 +244,12 @@ public class GardenerBot extends Globals
 			return false;
 		}
 		int tries = 0;
-		Direction spawnDirection = here.directionTo(theirInitialArchons[0]);
+		Direction spawnDirection = Direction.getNorth();
 		if (type == RobotType.LUMBERJACK && neutralTrees.length != 0)
 		{
 			spawnDirection = here.directionTo(neutralTrees[0].getLocation());
 		}
-		while (tries < 36)
+		while (tries < 90)
 		{
 			if (rc.canBuildRobot(type, spawnDirection))
 			{
@@ -249,7 +259,7 @@ public class GardenerBot extends Globals
 			}
 			else
 			{
-				spawnDirection = spawnDirection.rotateLeftDegrees(10);
+				spawnDirection = spawnDirection.rotateLeftDegrees(4);
 			}
 			tries++;
 		}

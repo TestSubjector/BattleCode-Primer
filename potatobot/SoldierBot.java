@@ -5,10 +5,7 @@ public class SoldierBot extends Globals
 {
 	public static void loop()throws GameActionException
 	{
-		if (archonDistance < 35f)
-		{
-			movingDirection = here.directionTo(theirInitialArchons[0]);
-		}
+		movingDirection = here.directionTo(theirInitialArchons[0]);
 		while (true)
 		{
 			try

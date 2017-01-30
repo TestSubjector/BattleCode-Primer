@@ -5,6 +5,7 @@ public class TankBot extends Globals
 {
 	public static void loop()throws GameActionException
 	{
+		movingDirection = here.directionTo(theirInitialArchons[0]);
 		while (true)
 		{
 			try
