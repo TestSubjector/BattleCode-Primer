@@ -35,6 +35,7 @@ public class ScoutBot extends Globals
 		if (enemyTarget != 0)
 		{
 			movingDirection = here.directionTo(enemyTargetLocation);
+			return;
 		}
 		else if (enemies.length != 0)
 		{

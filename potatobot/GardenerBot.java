@@ -3,7 +3,6 @@ import battlecode.common.*;
 
 public class GardenerBot extends Globals
 {
-	private static int treesIPlanted = 0;
 	private static boolean amFirstGardener = false;
 	private static RobotType typeToSpawnFirst;
 	private static Direction plantDirection;
@@ -93,7 +92,7 @@ public class GardenerBot extends Globals
 						tryToMove(awayFromNearestObstacle);
 						tryToBuild();
 					}
-					else if (maxICanPlant > 1)
+					else if (maxICanPlant > 2)
 					{
 						if (roundNum - spawnRoundNum == 30)
 						{
@@ -134,7 +133,6 @@ public class GardenerBot extends Globals
 			}
 			checkDirection = checkDirection.rotateLeftDegrees(60);
 		}
-		System.out.println(a);
 		return a;
 	}
 	
@@ -169,7 +167,6 @@ public class GardenerBot extends Globals
             if (rc.canPlantTree(plantDirection))
 			{
             	rc.plantTree(plantDirection);
-                treesIPlanted++;
                 updateTreeCount();
                 rc.broadcast(TREE_CHANNEL, treesPlanted + 1);
                 return true;
