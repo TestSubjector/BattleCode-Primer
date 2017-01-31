@@ -91,6 +91,13 @@ public class Globals
 	 * {731, 732, 733} = Buffer Channels
 	 */
 	
+	public static int[] ENEMY_STRAGGLERS_CHANNELS;
+	/* The straggler enemies channels represent:
+	 * 750 = Number of enemy stragglers seen (deprecated)
+	 * {751, 752, 753} - {768, 769, 770} = {ID of nth detected enemy straggler, (hashed) location of the nth detected enemy, Round Number it was last seen}
+	 * {771, 772, 773} = Buffer Channels
+	 */
+	
 	// End Broadcast Channels
 	
 	public static final int hasher = 100000;
@@ -159,30 +166,36 @@ public class Globals
 	
 	public static void initChannels()
 	{
+		int i;
 		ENEMY_GARDENERS_CHANNELS = new int[34];
-		for (int i = 700; i <= 733; i++)
+		for (i = 700; i <= 733; i++)
 		{
 			ENEMY_GARDENERS_CHANNELS[i - 700] = i;
 		}
 		ENEMY_ARCHONS_CHANNELS = new int[13];
-		for (int i = 43; i <= 55; i++)
+		for (i = 43; i <= 55; i++)
 		{
 			ENEMY_ARCHONS_CHANNELS[i - 43] = i;
 		}
 		SPAWN_LOCATIONS_CHANNELS = new int[32];
-		for (int i = 333; i <= 364; i++)
+		for (i = 333; i <= 364; i++)
 		{
 			SPAWN_LOCATIONS_CHANNELS[i - 333] = i;
 		}
 		FARM_LOCATIONS_CHANNELS = new int[32];
-		for (int i = 666; i <= 697; i++)
+		for (i = 666; i <= 697; i++)
 		{
 			FARM_LOCATIONS_CHANNELS[i - 666] = i;
 		}
 		IMPORTANT_TREES_CHANNELS = new int[24];
-		for (int i = 100; i <= 123; i++)
+		for (i = 100; i <= 123; i++)
 		{
 			IMPORTANT_TREES_CHANNELS[i - 100] = i;
+		}
+		ENEMY_STRAGGLERS_CHANNELS = new int[24];
+		for (i = 750; i <= 773; i++)
+		{
+			ENEMY_STRAGGLERS_CHANNELS[i - 750] = i;
 		}
 	}
 	// Initialization functions end here
