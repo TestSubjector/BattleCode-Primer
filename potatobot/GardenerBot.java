@@ -39,7 +39,6 @@ public class GardenerBot extends Globals
 			try
 			{
 				header();
-
 				BodyInfo[][] array = {enemies, allies, neutralTrees, enemyTrees, allyTrees};
 				Direction awayFromNearestObstacle = findDirectionAwayFromNearestObstacle(array);		
 				// rc.setIndicatorLine(here, here.add(awayFromNearestObstacle), 255, 255, 255);
@@ -211,6 +210,7 @@ public class GardenerBot extends Globals
 	
 	private static boolean tryToBuild()throws GameActionException
 	{		
+		// Try to incorporate TREES_CHANNEL
 		if ((scouts < 2 && roundNum < 75) || scouts < 1 || (scouts < Math.ceil((8d * roundNum) / 3000d)))
 		{
 			if (rc.hasRobotBuildRequirements(RobotType.SCOUT))
@@ -237,7 +237,7 @@ public class GardenerBot extends Globals
 			}
 		}
 		
-		if (tanks < 8)
+		if (tanks < 8 && amIATankSpawningSpawner())
 		{
 			if (rc.hasRobotBuildRequirements(RobotType.TANK))
 			{
@@ -276,6 +276,43 @@ public class GardenerBot extends Globals
 		return false;
 	}
 
+
+	private static boolean amIATankSpawningSpawner()throws GameActionException
+	{
+		float minDist = 500000f;
+		int loopLength = 9;
+		MapLocation closestArchonLocation = theirInitialArchons[0];
+		for (int i = 1; i < loopLength; i += 3)
+		{
+			int hashedLocation = rc.readBroadcast(ENEMY_ARCHONS_CHANNELS[i + 1]);
+			if (hashedLocation != 0)
+			{
+				MapLocation unhashedLocation = unhashIt(hashedLocation);
+				float distanceToArchon = here.distanceTo(unhashedLocation);
+				if (distanceToArchon < minDist)
+				{
+					minDist = distanceToArchon;
+					closestArchonLocation = unhashedLocation;
+				}
+			}
+		}
+		minDist = 500000f;
+		loopLength = rc.readBroadcast(SPAWN_LOCATIONS_CHANNELS[0]);
+		MapLocation spawnerLocation = here;
+		for (int i = 1; i <= loopLength; i++)
+		{
+			int hashedLocation = rc.readBroadcast(SPAWN_LOCATIONS_CHANNELS[i]);
+			MapLocation unhashedLocation = unhashIt(hashedLocation);
+			float distanceToArchon = closestArchonLocation.distanceTo(unhashedLocation);
+			if (distanceToArchon < minDist)
+			{
+				minDist = distanceToArchon;
+				spawnerLocation = unhashedLocation;
+			}
+		}
+		return (spawnerLocation.distanceTo(here) < 1f);
+	}
+	
 	
 	// Overridden footer for gardener, always try to water and then call global footer
 	

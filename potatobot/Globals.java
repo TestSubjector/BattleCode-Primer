@@ -338,7 +338,7 @@ public class Globals
 		treesPlanted = rc.readBroadcast(TREE_CHANNEL);
 	}
 
-	private static void updateNonAllyTreeDensity()
+	public static void updateNonAllyTreeDensity()
 	{
 		float sightArea = (float)Math.PI * myType.sensorRadius * myType.sensorRadius;
 		nonAllyTreeDensity = (nonAllyTreeArea / sightArea);
@@ -1031,9 +1031,9 @@ public class Globals
 		
 		int enemySum = 0, allySum = 0, wasteSum = 0, ans = 0;
 		float maxWeight = 0.0f;
-		final float SINGLE_ENEMY_WEIGHT = 3.0f, SINGLE_ALLY_WEIGHT = -1.2f, SINGLE_WASTE_WEIGHT = -0.4f;
-		final float TRIAD_ENEMY_WEIGHT = 9f, TRIAD_ALLY_WEIGHT = -3.5f, TRIAD_WASTE_WEIGHT = -1.0f;
-		final float PENTAD_ENEMY_WEIGHT = 14.0f, PENTAD_ALLY_WEIGHT = -5f, PENTAD_WASTE_WEIGHT = -1.2f;
+		final float SINGLE_ENEMY_WEIGHT = 1.0f, SINGLE_ALLY_WEIGHT = -0.4f, SINGLE_WASTE_WEIGHT = -0.125f;
+		final float TRIAD_ENEMY_WEIGHT = 10f, TRIAD_ALLY_WEIGHT = -5f, TRIAD_WASTE_WEIGHT = -1.0f;
+		final float PENTAD_ENEMY_WEIGHT = 14.0f, PENTAD_ALLY_WEIGHT = -8f, PENTAD_WASTE_WEIGHT = -1.2f;
 		
 		if(directionLimit == 7)
 		{
