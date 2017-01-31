@@ -409,17 +409,18 @@ public class Globals
 			int roundNumLastSeen = rc.readBroadcast(ENEMY_ARCHONS_CHANNELS[i + 2]);
 			if (hashedLocation != 0)
 			{
-				if (roundNum - roundNumLastSeen > 50)
+				if (roundNum - roundNumLastSeen > 30)
 				{
 					archonZeros[(i - 1) / 3] = true;
+					rc.broadcast(ENEMY_ARCHONS_CHANNELS[i], 0);
+					rc.broadcast(ENEMY_ARCHONS_CHANNELS[i + 1], 0);
+					rc.broadcast(ENEMY_ARCHONS_CHANNELS[i + 2], 0);
 				}
 				else 
 				{
 					MapLocation unhashedLocation = unhashIt(hashedLocation);
 					archonsRead[numberOfArchonsRead][0] = readID;
 					archonsRead[numberOfArchonsRead++][1] = i;
-					rc.broadcast(ENEMY_ARCHONS_CHANNELS[i + 1], hashedLocation);
-					rc.broadcast(ENEMY_ARCHONS_CHANNELS[i + 2], roundNum);
 					if (!(myType == RobotType.SCOUT && roundNum < 1000) && here.distanceTo(unhashedLocation) < enemyTargetDistance)
 					{
 						enemyTarget = readID;
@@ -444,9 +445,12 @@ public class Globals
 			int roundNumLastSeen = rc.readBroadcast(ENEMY_GARDENERS_CHANNELS[i + 2]);
 			if (hashedLocation != 0)
 			{
-				if (roundNum - roundNumLastSeen > 50)
+				if (roundNum - roundNumLastSeen > 30)
 				{
 					gardenerZeros[(i - 1) / 3] = true;
+					rc.broadcast(ENEMY_GARDENERS_CHANNELS[i], 0);
+					rc.broadcast(ENEMY_GARDENERS_CHANNELS[i + 1], 0);
+					rc.broadcast(ENEMY_GARDENERS_CHANNELS[i + 2], 0);
 				}
 				else
 				{

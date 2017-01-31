@@ -11,11 +11,7 @@ public class ArchonBot extends Globals
 			try
 			{
 				header();
-				for (int i = 0; i <= 8; i++)
-				{
-					System.out.print(robotCount[i] + " ");
-				}
-				System.out.println();
+				
 				BodyInfo[][] array = {enemies, allies, neutralTrees, enemyTrees, allyTrees};
 				awayFromNearestObstacle = findDirectionAwayFromNearestObstacle(array);
 				// rc.setIndicatorLine(here, here.add(awayFromNearestObstacle), 255, 255, 255);
@@ -35,6 +31,7 @@ public class ArchonBot extends Globals
 				{
 					movingDirection = randomDirection();
 				}
+				
 				footer();
 			}
 			catch (GameActionException e)
