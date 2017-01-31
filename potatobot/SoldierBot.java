@@ -41,16 +41,8 @@ public class SoldierBot extends Globals
 		}
 		else if (enemyTarget != 0)
 		{
-			if (rc.canSenseLocation(enemyTargetLocation) && !rc.canSenseRobot(enemyTarget))
-			{
-				enemyTarget = 0;
-				movingDirection = randomDirection();
-			}
-			else
-			{
-				// rc.setIndicatorLine(here, enemyTargetLocation, 255, 0, 0);
-				movingDirection = here.directionTo(enemyTargetLocation);
-			}
+			rc.setIndicatorLine(here, enemyTargetLocation, 255, 0, 0);
+			movingDirection = here.directionTo(enemyTargetLocation);
 		}
 	}
 }

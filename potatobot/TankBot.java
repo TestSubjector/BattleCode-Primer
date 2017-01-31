@@ -47,7 +47,7 @@ public class TankBot extends Globals
 			}
 			else
 			{
-				// rc.setIndicatorLine(here, enemyTargetLocation, 255, 0, 0);
+				rc.setIndicatorLine(here, enemyTargetLocation, 255, 0, 0);
 				movingDirection = here.directionTo(enemyTargetLocation);
 			}
 		}

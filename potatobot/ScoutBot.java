@@ -32,6 +32,17 @@ public class ScoutBot extends Globals
 
 	private static void findMoveDirection()throws GameActionException
 	{
+		// Check nearby neutral trees for bullets
+		int loopLength = neutralTrees.length;
+		for(int i = 0; i < loopLength; i++)
+		{	
+			TreeInfo tree = neutralTrees[i];
+			if (tree.getContainedBullets() > 0)
+			{
+				movingDirection = here.directionTo(tree.getLocation());
+				return;
+			}
+		}
 		if (enemyTarget != 0)
 		{
 			movingDirection = here.directionTo(enemyTargetLocation);
@@ -47,17 +58,6 @@ public class ScoutBot extends Globals
 				movingDirection = here.directionTo(enemyLocation);
 			}
 			return;
-		}
-		// Check nearby neutral trees for bullets
-		int loopLength = neutralTrees.length;
-		for(int i = 0; i< loopLength;i++)
-		{	
-			TreeInfo tree = neutralTrees[i];
-			if (tree.getContainedBullets() > 0)
-			{
-				movingDirection = here.directionTo(tree.getLocation());
-				return;
-			}
 		}
 	}
 	
