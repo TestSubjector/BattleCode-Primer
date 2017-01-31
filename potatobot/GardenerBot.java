@@ -219,7 +219,7 @@ public class GardenerBot extends Globals
 			}
 		}
 		
-		boolean conditionForLumberjacks = neutralTrees.length > 12 || lumberjacks < 2;
+		boolean conditionForLumberjacks = (neutralTrees.length > 12 || lumberjacks < 2) || (roundNum > 300 && lumberjacks < 4) || (roundNum > 500 && lumberjacks < 5);
 		if (conditionForLumberjacks && lumberjacks < 20)
 		{
 			if (rc.hasRobotBuildRequirements(RobotType.LUMBERJACK))
