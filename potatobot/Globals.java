@@ -44,9 +44,9 @@ public class Globals
 	public static float importantTreeTargetDistance;
 	public static boolean amFarmer;
 	public static int[] tryAngles;
-	public static boolean movedBack;
 	public static boolean lastMoveWasPositive;
-	
+	public static MapLocation closestArchonLocation;
+	public static MapLocation closestFarmLocation;
 	// Broadcast Channels
 	public static int TREE_CHANNEL = 64;
 	
@@ -94,8 +94,8 @@ public class Globals
 	public static int[] ENEMY_STRAGGLERS_CHANNELS;
 	/* The straggler enemies channels represent:
 	 * 750 = Number of enemy stragglers seen (deprecated)
-	 * {751, 752, 753} - {768, 769, 770} = {ID of nth detected enemy straggler, (hashed) location of the nth detected enemy, Round Number it was last seen}
-	 * {771, 772, 773} = Buffer Channels
+	 * {751, 752, 753} - {778, 779, 780} = {ID of nth detected enemy straggler, (hashed) location of the nth detected enemy, Round Number it was last seen}
+	 * {781, 782, 783} = Buffer Channels
 	 */
 	
 	// End Broadcast Channels
@@ -136,8 +136,9 @@ public class Globals
 		importantTreeTargetDistance = 5000000f;
 		initTryAngles();
 		initChannels();
-		movedBack = false;
 		lastMoveWasPositive = true;
+		closestArchonLocation = null;
+		closestFarmLocation = null; 
 	}
 
 	public static void robotInit(RobotType type)throws GameActionException
@@ -192,8 +193,8 @@ public class Globals
 		{
 			IMPORTANT_TREES_CHANNELS[i - 100] = i;
 		}
-		ENEMY_STRAGGLERS_CHANNELS = new int[24];
-		for (i = 750; i <= 773; i++)
+		ENEMY_STRAGGLERS_CHANNELS = new int[34];
+		for (i = 750; i <= 783; i++)
 		{
 			ENEMY_STRAGGLERS_CHANNELS[i - 750] = i;
 		}
@@ -422,7 +423,7 @@ public class Globals
 			int roundNumLastSeen = rc.readBroadcast(ENEMY_ARCHONS_CHANNELS[i + 2]);
 			if (hashedLocation != 0)
 			{
-				if (roundNum - roundNumLastSeen > 30)
+				if (roundNum - roundNumLastSeen > 35)
 				{
 					archonZeros[(i - 1) / 3] = true;
 					rc.broadcast(ENEMY_ARCHONS_CHANNELS[i], 0);
@@ -484,8 +485,45 @@ public class Globals
 			}
 		}
 		
+		int[][] stragglersRead = new int[10][2];
+		int numberOfStragglersRead = 0;
+		boolean[] stragglerZeros = new boolean[10];
+		for (int i = 1; i < 30; i += 3)
+		{
+			int readID = rc.readBroadcast(ENEMY_STRAGGLERS_CHANNELS[i]);
+			int hashedLocation = rc.readBroadcast(ENEMY_STRAGGLERS_CHANNELS[i + 1]);
+			int roundNumLastSeen = rc.readBroadcast(ENEMY_STRAGGLERS_CHANNELS[i + 2]);
+			if (hashedLocation != 0)
+			{
+				if (roundNum - roundNumLastSeen > 20)
+				{
+					stragglerZeros[(i - 1) / 3] = true;
+					rc.broadcast(ENEMY_STRAGGLERS_CHANNELS[i], 0);
+					rc.broadcast(ENEMY_STRAGGLERS_CHANNELS[i + 1], 0);
+					rc.broadcast(ENEMY_STRAGGLERS_CHANNELS[i + 2], 0);
+				}
+				else
+				{
+					MapLocation unhashedLocation = unhashIt(hashedLocation);
+					stragglersRead[numberOfStragglersRead][0] = readID;
+					stragglersRead[numberOfStragglersRead++][1] = i;
+					if (here.distanceTo(unhashedLocation) < enemyTargetDistance && enemyTarget == 0)
+					{
+						enemyTarget = readID;
+						enemyTargetLocation = unhashedLocation;
+						enemyTargetDistance = here.distanceTo(enemyTargetLocation);
+					}
+				}
+			}
+			else
+			{
+				stragglerZeros[(i - 1) / 3] = true;
+			}
+		}
+		
 		int az = 0;
 		int gz = 0;
+		int sz = 0;
 		
 		int limit = Math.min(enemies.length, 30);
 		for(int i = 0; i < limit; i++)
@@ -572,6 +610,46 @@ public class Globals
 					rc.broadcast(ENEMY_GARDENERS_CHANNELS[index], enemyID);
 					rc.broadcast(ENEMY_GARDENERS_CHANNELS[index + 1], hashedLocation);
 					rc.broadcast(ENEMY_GARDENERS_CHANNELS[index + 2], roundNum);
+				}
+			}
+			else
+			{
+				boolean found = false;
+				int j;
+				for (j = 0; j < numberOfStragglersRead; j++)
+				{
+					if (stragglersRead[j][0] == enemyID)
+					{
+						found = true;
+						break;
+					}
+				}
+				if (!found)
+				{
+					while (sz < 10 && !stragglerZeros[sz])
+					{
+						sz++;
+					}
+					if (sz == 10)
+					{
+						System.out.println("Lite");
+					}
+					else
+					{
+						int index = (sz * 3) + 1;
+						int hashedLocation = hashIt(enemyLocation);
+						rc.broadcast(ENEMY_STRAGGLERS_CHANNELS[index], enemyID);
+						rc.broadcast(ENEMY_STRAGGLERS_CHANNELS[index + 1], hashedLocation);
+						rc.broadcast(ENEMY_STRAGGLERS_CHANNELS[index + 2], roundNum);
+					}
+				}
+				else
+				{
+					int index = stragglersRead[j][1];
+					int hashedLocation = hashIt(enemyLocation);
+					rc.broadcast(ENEMY_STRAGGLERS_CHANNELS[index], enemyID);
+					rc.broadcast(ENEMY_STRAGGLERS_CHANNELS[index + 1], hashedLocation);
+					rc.broadcast(ENEMY_STRAGGLERS_CHANNELS[index + 2], roundNum);
 				}
 			}
 		}
@@ -683,31 +761,38 @@ public class Globals
 			return false;
 		}
 		
-		int loopLength = (myType == RobotType.SCOUT) ? 179 : tryAngles.length;
-		for(int i = 0; i < loopLength; i++)
+		int loopLength = (myType == RobotType.SCOUT) ? 70 : tryAngles.length;
+		if (lastMoveWasPositive)
 		{
-			int angle = tryAngles[i];
-			if ((lastMoveWasPositive && angle >= 0) || (!lastMoveWasPositive && angle < 0))
+			for(int i = 0; i < loopLength; i += 2)
 			{
-				Direction candidateDirection = movingDirection.rotateLeftDegrees(angle);
+				int angle = tryAngles[i];
+				Direction candidateDirection = movingDirection.rotateRightDegrees(angle);
 				if (rc.canMove(candidateDirection))
 				{
-					if (i <= 210)
-					{
-						movedBack = false;
-					}
-					else
-					{
-						movedBack = true;
-					}
-					if (angle < 0)
-					{
-						lastMoveWasPositive = false;
-					}
-					else
-					{
-						lastMoveWasPositive = true;
-					}
+					lastMoveWasPositive = true;
+					rc.move(candidateDirection);
+					updateLocation();
+					return true;
+				}
+			}
+		}
+		if (!lastMoveWasPositive)
+		{
+			if (rc.canMove(movingDirection))
+			{
+				lastMoveWasPositive = true;
+				rc.move(movingDirection);
+				updateLocation();
+				return true;
+			}
+			for(int i = 1; i < loopLength; i += 2)
+			{
+				int angle = tryAngles[i];
+				Direction candidateDirection = movingDirection.rotateRightDegrees(angle);
+				if (rc.canMove(candidateDirection))
+				{
+					lastMoveWasPositive = false;
 					rc.move(candidateDirection);
 					updateLocation();
 					return true;
@@ -717,17 +802,9 @@ public class Globals
 		for(int i = 0; i < loopLength; i++)
 		{
 			int angle = tryAngles[i];
-			Direction candidateDirection = movingDirection.rotateLeftDegrees(angle);
+			Direction candidateDirection = movingDirection.rotateRightDegrees(angle);
 			if (rc.canMove(candidateDirection))
 			{
-				if (i <= 210)
-				{
-					movedBack = false;
-				}
-				else
-				{
-					movedBack = true;
-				}
 				if (angle < 0)
 				{
 					lastMoveWasPositive = false;
@@ -744,27 +821,6 @@ public class Globals
 		return false;
 	}
 	
-	public static boolean tryToMoveThisMuch(Direction movingDirection, float distance)throws GameActionException
-	{
-		if (rc.hasMoved())
-		{
-			return false;
-		}
-		int loopLength = tryAngles.length;
-		for(int i = 0; i < loopLength; i++)
-		{
-			int angle = tryAngles[i];
-			Direction candidateDirection = movingDirection.rotateLeftDegrees(angle);
-			if (rc.canMove(candidateDirection, distance))
-			{
-				rc.move(candidateDirection, distance);
-				updateLocation();
-				return true;
-			}
-		}
-		return false;
-	}
-
 	public static boolean tryToMoveTowards(MapLocation location)throws GameActionException
 	{
 		return tryToMove(here.directionTo(location));
@@ -820,9 +876,11 @@ public class Globals
 
 	public static void tryToDodge()throws GameActionException
 	{
+		RobotInfo me = new RobotInfo(myID, us, myType, here, rc.getHealth(), rc.getAttackCount(), rc.getMoveCount());
+		int loopLength = 0;
 		if (!(myType == RobotType.LUMBERJACK))
 		{
-			int loopLength = enemies.length;
+			loopLength = enemies.length;
 			for(int i = 0; i < loopLength; i++)
 			{
 				RobotInfo enemy = enemies[i];
@@ -834,26 +892,25 @@ public class Globals
 					return;
 				}
 			}
-		}
-		RobotInfo me = new RobotInfo(myID, us, myType, here, rc.getHealth(), rc.getAttackCount(), rc.getMoveCount());
-		int loopLength = Math.min(3, sensedBullets.length);
-		Direction centralBulletDirection = null;
-		MapLocation centralBulletLocation = null;
-		if (loopLength != 0)
-		{
-			centralBulletDirection = sensedBullets[0].getDir(); 
-			centralBulletLocation = sensedBullets[0].getLocation(); 
-		}
-		for(int i = 1; i < loopLength; i++)
-		{
-			double deviationFromCentre = Math.abs(sensedBullets[i].getDir().degreesBetween(centralBulletDirection));
-			if ((deviationFromCentre - GameConstants.TRIAD_SPREAD_DEGREES <= 0.01) || (deviationFromCentre - GameConstants.PENTAD_SPREAD_DEGREES <= 0.01))
+			loopLength = Math.min(3, sensedBullets.length);
+			Direction centralBulletDirection = null;
+			MapLocation centralBulletLocation = null;
+			if (loopLength != 0)
 			{
-				if (willHitBody(me, centralBulletDirection, centralBulletLocation))
+				centralBulletDirection = sensedBullets[0].getDir(); 
+				centralBulletLocation = sensedBullets[0].getLocation(); 
+			}
+			for(int i = 1; i < loopLength; i++)
+			{
+				double deviationFromCentre = Math.abs(sensedBullets[i].getDir().degreesBetween(centralBulletDirection));
+				if ((deviationFromCentre - GameConstants.TRIAD_SPREAD_DEGREES <= 0.01) || (deviationFromCentre - GameConstants.PENTAD_SPREAD_DEGREES <= 0.01))
 				{
-					if (backStep(centralBulletDirection))
+					if (willHitBody(me, centralBulletDirection, centralBulletLocation))
 					{
-						return;
+						if (backStep(centralBulletDirection))
+						{
+							return;
+						}
 					}
 				}
 			}
@@ -898,7 +955,7 @@ public class Globals
 			return false;
 		}
 		float bodyRadius = body.getRadius();
-		float tan = (float)Math.tan(Math.abs(radiansBetween));
+		float tan = (float)Math.tan(Math.abs(radiansBetween) - 0.1);
 		float distanceFromCentre = (float) (distanceToCentre * tan);
 		if (distanceFromCentre < bodyRadius)
 		{

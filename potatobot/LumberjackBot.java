@@ -5,7 +5,7 @@ public class LumberjackBot extends Globals
 {
 	public static void loop()throws GameActionException
 	{
-		movingDirection = randomDirection();
+		movingDirection = here.directionTo(theirInitialArchons[0]);
 		while (true)
 		{
 			try

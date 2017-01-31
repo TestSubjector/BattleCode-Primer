@@ -211,7 +211,8 @@ public class GardenerBot extends Globals
 	private static boolean tryToBuild()throws GameActionException
 	{		
 		// Try to incorporate TREES_CHANNEL
-		if ((scouts < 2 && roundNum < 75) || scouts < 1 || (scouts < Math.ceil((8d * roundNum) / 3000d)))
+		boolean conditionForScouts = (scouts < 2 && roundNum < 75) || ((scouts < Math.ceil(8d * gameProgressPercentage)) && soldiers >= 2);
+		if (conditionForScouts || scouts < 1)
 		{
 			if (rc.hasRobotBuildRequirements(RobotType.SCOUT))
 			{
@@ -219,7 +220,7 @@ public class GardenerBot extends Globals
 			}
 		}
 		
-		boolean conditionForLumberjacks = (neutralTrees.length > 12 || lumberjacks < 2) || (roundNum > 300 && lumberjacks < 4) || (roundNum > 500 && lumberjacks < 5);
+		boolean conditionForLumberjacks = (neutralTrees.length > 12 || lumberjacks < 2) || (lumberjacks < 4 && soldiers >= 5);
 		if (conditionForLumberjacks && lumberjacks < 20)
 		{
 			if (rc.hasRobotBuildRequirements(RobotType.LUMBERJACK))
@@ -228,7 +229,7 @@ public class GardenerBot extends Globals
 			}
 		}
 
-		boolean conditionForSoldiers =  (soldiers <= 5) || (tanks * 11 >= soldiers * 7);
+		boolean conditionForSoldiers =  (soldiers <= 7) || (tanks * 11 >= soldiers * 7);
 		if (conditionForSoldiers && soldiers < 30)
 		{
 			if (rc.hasRobotBuildRequirements(RobotType.SOLDIER))
@@ -281,7 +282,7 @@ public class GardenerBot extends Globals
 	{
 		float minDist = 500000f;
 		int loopLength = 9;
-		MapLocation closestArchonLocation = theirInitialArchons[0];
+		closestArchonLocation = theirInitialArchons[0];
 		for (int i = 1; i < loopLength; i += 3)
 		{
 			int hashedLocation = rc.readBroadcast(ENEMY_ARCHONS_CHANNELS[i + 1]);

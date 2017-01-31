@@ -17,7 +17,7 @@ public class ScoutBot extends Globals
 				// movingDirection decided, now tryToMove
 				if (!tryToMove(movingDirection))
 				{
-					movingDirection = randomDirection();
+					movingDirection = movingDirection.rotateLeftRads(2.1f);
 				}
 				tryShot();
 				footer();
