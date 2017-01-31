@@ -26,6 +26,7 @@ public class Globals
 	public static int tanks;
 	public static int gardeners;
 	public static int farmers;
+	public static int spawners;
 	public static float nonAllyTreeArea;
 	public static float nonAllyTreeDensity;
 	public static RobotInfo[] allies;
@@ -71,10 +72,16 @@ public class Globals
 	 * 123 = Index of first 0 location
 	 */
 	
+	public static int[] SPAWN_LOCATIONS_CHANNELS;
+	/* The spawn locations channels represent:
+	 * 333 = Number of spawn locations made
+	 * 334 - 364 = (hashed) location of the nth farm centre
+	 */
+	
 	public static int[] FARM_LOCATIONS_CHANNELS;
 	/* The farm locations channels represent:
 	 * 666 = Number of farms made
-	 * 667 - 690 = (hashed) location of the nth farm centre
+	 * 667 - 697 = (hashed) location of the nth farm centre
 	 */
 	
 	public static int[] ENEMY_GARDENERS_CHANNELS;
@@ -88,6 +95,7 @@ public class Globals
 	
 	public static final int hasher = 100000;
 	public static final int farmerIndex = 7;
+	public static final int spawnerIndex = 8;
 	public static final double maxHitAngle = Math.atan(2.0f / 3.0f);
 	// Initialization functions start here
 	
@@ -109,7 +117,7 @@ public class Globals
 		numberOfArchons = theirInitialArchons.length;
 		victoryPoints = 0;
 		movingDirection = randomDirection();
-		robotCount = new int[8];
+		robotCount = new int[9];
 		updateRobotCount();
 		updateNonAllyTreeDensity();
 		treesPlanted = 0;
@@ -161,8 +169,13 @@ public class Globals
 		{
 			ENEMY_ARCHONS_CHANNELS[i - 43] = i;
 		}
-		FARM_LOCATIONS_CHANNELS = new int[35];
-		for (int i = 666; i <= 690; i++)
+		SPAWN_LOCATIONS_CHANNELS = new int[32];
+		for (int i = 333; i <= 364; i++)
+		{
+			SPAWN_LOCATIONS_CHANNELS[i - 333] = i;
+		}
+		FARM_LOCATIONS_CHANNELS = new int[32];
+		for (int i = 666; i <= 697; i++)
 		{
 			FARM_LOCATIONS_CHANNELS[i - 666] = i;
 		}
@@ -300,12 +313,18 @@ public class Globals
 	{
 		int robotsOfMyType = robotCount[myType.ordinal()];
 		rc.broadcast(myType.ordinal(), robotsOfMyType - 1);
-		if (myType == RobotType.GARDENER && amFarmer)
+		if (myType == RobotType.GARDENER)
 		{
-			robotsOfMyType = robotCount[farmerIndex];
-			rc.broadcast(farmerIndex, robotsOfMyType - 1);
-			int deadFarmers = rc.readBroadcast(DEAD_FARMERS_CHANNEL);
-			rc.broadcast(DEAD_FARMERS_CHANNEL, deadFarmers + 1);
+			if (amFarmer)
+			{
+				robotsOfMyType = robotCount[farmerIndex];
+				rc.broadcast(farmerIndex, robotsOfMyType - 1);
+			}
+			else
+			{
+				robotsOfMyType = robotCount[spawnerIndex];
+				rc.broadcast(spawnerIndex, robotsOfMyType - 1);
+			}
 		}
 	}
 	
@@ -327,7 +346,7 @@ public class Globals
 	
 	public static void updateRobotCount()throws GameActionException
 	{
-		for (int i = 1; i <= 7; i++)
+		for (int i = 1; i <= 8; i++)
 		{
 			robotCount[i] = rc.readBroadcast(i);
 		}
@@ -337,6 +356,7 @@ public class Globals
 		tanks = robotCount[RobotType.TANK.ordinal()];
 		gardeners = robotCount[RobotType.GARDENER.ordinal()];
 		farmers = robotCount[farmerIndex];
+		spawners = robotCount[spawnerIndex];
 	}
 
 	public static void updateNearbyBullets()throws GameActionException
