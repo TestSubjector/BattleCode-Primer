@@ -19,7 +19,7 @@ public class GardenerBot extends Globals
 		{
 			rc.broadcast(spawnerIndex, spawners + 1);
 		}
-		plantDirection = here.directionTo(theirInitialArchons[0]).rotateLeftDegrees(60);
+		plantDirection = here.directionTo(theirInitialArchons[0]).rotateLeftDegrees(75);
 		updateRobotCount();
 		updateNearbyObjects();
 		if (gardeners == 1)
