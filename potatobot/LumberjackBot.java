@@ -13,13 +13,13 @@ public class LumberjackBot extends Globals
 				header();
 	
 				findMoveDirection();
-				
-				if (!(tryToStrike() || tryToChop()))
+				if (!tryToMove(movingDirection))
 				{
-					if (!tryToMove(movingDirection))
-					{
-						movingDirection = randomDirection();
-					}
+					movingDirection = randomDirection();
+				}
+				if (!tryToStrike())
+				{
+					tryToChop();
 				}
 				footer();
 			}
