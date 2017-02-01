@@ -14,11 +14,9 @@ public class ArchonBot extends Globals
 				
 				BodyInfo[][] array = {enemies, allies, neutralTrees, enemyTrees, allyTrees};
 				awayFromNearestObstacle = findDirectionAwayFromNearestObstacle(array);
-				// rc.setIndicatorLine(here, here.add(awayFromNearestObstacle), 255, 255, 255);
-				// Use TreeDensity after Akhil is done with the maths
 				if (rc.getBuildCooldownTurns() <= 0)
 				{
-					if ((gardeners < 1  || neutralTrees.length < 15) && gardeners <= gameProgressPercentage * 30 && tryHiringGardener())
+					if (gardeners < gameProgressPercentage * 30 && tryHiringGardener())
 					{
 						robotInit(RobotType.GARDENER);
 					}
