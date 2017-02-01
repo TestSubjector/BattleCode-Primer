@@ -230,7 +230,7 @@ public class GardenerBot extends Globals
 		}
 
 		boolean conditionForSoldiers =  (soldiers <= 7) || (tanks * 11 >= soldiers * 7);
-		if (conditionForSoldiers && soldiers < 30)
+		if (conditionForSoldiers && soldiers < 30 && iAmAGoodSpawningSpawner())
 		{
 			if (rc.hasRobotBuildRequirements(RobotType.SOLDIER))
 			{
@@ -238,7 +238,7 @@ public class GardenerBot extends Globals
 			}
 		}
 		
-		if (tanks < 8 && amIATankSpawningSpawner())
+		if (tanks < 8 && iAmAGoodSpawningSpawner())
 		{
 			if (rc.hasRobotBuildRequirements(RobotType.TANK))
 			{
@@ -278,7 +278,7 @@ public class GardenerBot extends Globals
 	}
 
 
-	private static boolean amIATankSpawningSpawner()throws GameActionException
+	private static boolean iAmAGoodSpawningSpawner()throws GameActionException
 	{
 		float minDist = 500000f;
 		int loopLength = 9;
